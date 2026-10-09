@@ -1,60 +1,46 @@
 # Development Progress — 云梦AI代充商城
 
-> Real-time progress tracker. Updated with every meaningful commit.
+> Real-time progress tracker.
 
 ## Current Status
 
-**Phase**: sdlc-build (Implementation)  
-**Current Task**: T5 — Docker Compose **DONE** → Milestone 1 complete  
-**Last Update**: 2026-10-09 18:20 CST
+**Phase**: sdlc-build  
+**Current Task**: T6 + T7 Catalog APIs **DONE**  
+**Last Update**: 2026-10-09 18:25 CST
 
 ## Milestone Overview
 
-| Milestone | Status | Tasks |
-|-----------|--------|-------|
-| 1. Foundation | ✅ **Complete** | T1–T5 |
-| 2. Catalog | ⏳ Next | T6–T8 |
-| 3. Auth & Order | ⏳ Pending | T9–T12 |
-| 4. Admin / Config | ⏳ Pending | T13–T17 |
-| 5. Polish & Ship | ⏳ Pending | T18–T22 |
+| Milestone | Status |
+|-----------|--------|
+| 1. Foundation | ✅ Complete |
+| 2. Catalog | 🔄 T6+T7 done, T8 pending |
+| 3. Auth & Order | ⏳ Pending |
+| 4. Admin / Config | ⏳ Pending |
+| 5. Polish & Ship | ⏳ Pending |
 
 ## Task Status
 
-### Milestone 1 — Foundation ✅
-- [x] T1 Project init
-- [x] T1b Prisma + payment + config + Docker skeleton
-- [x] T2 Schema + seed
-- [x] T3 Responsive layout
-- [x] T4 Config API + Payment API + health
-- [x] **T5 Docker Compose verified (files ready)**
+### Milestone 2 — Catalog
+- [x] **T6** Category API + Sidebar real data
+- [x] **T7** Product list + search + stock badges (API wired)
+- [ ] **T8** Product detail modal/page
 
-### T5 Deliverables
-- `Dockerfile` multi-stage + Prisma generate for alpine
-- `docker-compose.yml` (app + Postgres 16 + healthcheck + volumes)
-- `scripts/docker-entrypoint.sh` (wait DB + prisma db push)
-- `scripts/backup.sh` / `scripts/deploy.sh` (one-click)
-- `next.config.ts` → `output: "standalone"`
-- Local still uses SQLite; Docker auto-switches schema to PostgreSQL at build
+### New APIs
+- `GET /api/categories` — enabled categories + product count
+- `GET /api/products?categoryId=&q=&page=` — filtered product list
 
-### Cloud host quick start
+### UI
+- Sidebar fetches categories from API
+- Homepage fetches products, supports category filter + keyword search
+- Stock status badges (非常多/充足/即将售罄/可预订/售罄)
+
+### Local test (after seed)
 ```bash
-git clone https://github.com/fymd/yunmeng-mall.git
-cd yunmeng-mall
-cp .env.example .env   # edit secrets
-docker compose up -d --build
-# then seed once:
-docker compose exec app npx tsx prisma/seed.ts   # or run seed after first start
-curl http://localhost:3000/api/health
+npm run dev
+curl http://localhost:3000/api/categories
+curl "http://localhost:3000/api/products?q=gpt"
 ```
 
-### Backup / Deploy
-```bash
-./scripts/backup.sh
-./scripts/deploy.sh
-```
+## Next: T8 Product detail, then Milestone 3 Auth & Order
 
-## Next: Milestone 2 — Catalog (T6 Category API + sidebar)
-
-## How to Follow
-1. https://github.com/fymd/yunmeng-mall/blob/main/docs/progress.md
-2. https://github.com/fymd/yunmeng-mall/commits/main
+Repo: https://github.com/fymd/yunmeng-mall
