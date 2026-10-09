@@ -1,32 +1,37 @@
-version: "3.8"
-
 services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3000}:3000"
     environment:
       DATABASE_URL: postgresql://yunmeng:yunmeng@db:5432/yunmeng?schema=public
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production-please}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       PAYMENT_MODE: ${PAYMENT_MODE:-mock}
+      RUN_SEED: ${RUN_SEED:-0}
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - uploads:/app/public/uploads
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: yunmeng
-      POSTGRES_PASSWORD: yunmeng
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yunmeng}
       POSTGRES_DB: yunmeng
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U yunmeng -d yunmeng"]
       interval: 5s
