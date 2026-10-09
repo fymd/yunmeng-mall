@@ -2,25 +2,25 @@
 
 ## Current Status
 
-**T14 Category CRUD**: ✅ DONE  
-**Last Update**: 2026-10-09 22:50 JST
+**T15 Product CRUD**: ✅ DONE  
+**Last Update**: 2026-10-09 23:00 JST
 
 ## Milestone 4 — Admin
-- [x] T13 Admin layout + guard
-- [x] **T14 Category CRUD**
-- [ ] T15 Product CRUD
+- [x] T13 Admin layout
+- [x] T14 Category CRUD
+- [x] **T15 Product CRUD + publish**
 - [ ] T16 Order management
 - [ ] T17 Site config
 
-### T14 Features
-- GET /api/categories?all=1 (admin, includes disabled)
-- POST / PATCH / DELETE (admin only)
-- Admin UI: list, create, edit, enable/disable, delete (blocked if has products)
-- Sort field supported
+### T15 Features
+- POST/PATCH/DELETE /api/products (admin)
+- GET ?all=1 for admin list
+- Admin UI: create/edit, stock status, tags, category, enable/disable (\u4e0a\u67b6/\u4e0b\u67b6)
+- Soft-delete if product has orders
 
 ### Access
-Login as admin → /admin/categories
+/admin/products (login as admin)
 
-## Next: T15 Product CRUD
+## Next: T16 Order management
 
 Repo: https://github.com/fymd/yunmeng-mall
