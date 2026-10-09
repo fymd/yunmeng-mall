@@ -2,25 +2,24 @@
 
 ## Current Status
 
-**T15 Product CRUD**: ✅ DONE  
-**Last Update**: 2026-10-09 23:00 JST
+**T16 Order management**: ✅ DONE  
+**Last Update**: 2026-10-10 03:40 JST
 
 ## Milestone 4 — Admin
 - [x] T13 Admin layout
 - [x] T14 Category CRUD
-- [x] **T15 Product CRUD + publish**
-- [ ] T16 Order management
+- [x] T15 Product CRUD + publish
+- [x] **T16 Order management**
 - [ ] T17 Site config
 
-### T15 Features
-- POST/PATCH/DELETE /api/products (admin)
-- GET ?all=1 for admin list
-- Admin UI: create/edit, stock status, tags, category, enable/disable (\u4e0a\u67b6/\u4e0b\u67b6)
-- Soft-delete if product has orders
+### T16 Features
+- GET /api/orders?all=1 — admin list with status / keyword filter + pagination
+- PATCH /api/orders — admin update status & remark (sets paidAt when → PAID)
+- Admin UI: order table, status dropdown, quick 发货/完成, remark editor, search
 
 ### Access
-/admin/products (login as admin)
+/admin/orders (login as admin)
 
-## Next: T16 Order management
+## Next: T17 Site + Payment config UI
 
 Repo: https://github.com/fymd/yunmeng-mall
