@@ -2,17 +2,20 @@
 
 ## Current Status
 
-**T28 Payment result page**: ✅ DONE  
-**Last Update**: 2026-10-10 05:00 JST
+**T29 Enhanced payment result page**: ✅ DONE  
+**Last Update**: 2026-10-10 05:05 JST
 
 ## Post-MVP
-- [x] T23–T27
-- [x] **T28 支付完成页** `/pay/result?orderNo=`
+- [x] T28 支付结果页基础版
+- [x] **T29 支付完成页增强展示**
 
-### T28 Features
-- Result page: status icon, amount, orderNo copy, remark, actions
-- Auto-poll while PENDING (up to ~2 min)
-- Checkout redirects to result (mock) or payUrl then return_url (Alipay)
-- WeChat QR redirects to result when paid
+### T29 Features
+- Receipt-style card + gradient header by status
+- Progress timeline: 下单 → 支付 → 发货 → 完成
+- Large amount on success; copy orderNo; print receipt
+- CS block from public config (QQ / WeChat / link)
+- Pending auto-poll retained
+
+URL: `/pay/result?orderNo=`
 
 Repo: https://github.com/fymd/yunmeng-mall
