@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin", label: "概览", exact: true },
   { href: "/admin/categories", label: "分类管理" },
   { href: "/admin/products", label: "商品管理" },
+  { href: "/admin/cards", label: "卡密发货" },
   { href: "/admin/orders", label: "订单管理" },
   { href: "/admin/config", label: "站点配置" },
   { href: "/account", label: "修改密码" },

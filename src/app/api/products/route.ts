@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     if (all) {
       const admin = await requireAdmin();
-      if (!admin) return NextResponse.json({ error: "\u65e0\u6743\u9650" }, { status: 403 });
+      if (!admin) return NextResponse.json({ error: "无权限" }, { status: 403 });
     }
 
     const where: {
@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
           tags: true,
           imageUrl: true,
           enabled: true,
+          autoDeliver: true,
           categoryId: true,
           category: { select: { id: true, name: true } },
           createdAt: true,
@@ -78,16 +79,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const admin = await requireAdmin();
-    if (!admin) return NextResponse.json({ error: "\u65e0\u6743\u9650" }, { status: 403 });
+    if (!admin) return NextResponse.json({ error: "无权限" }, { status: 403 });
 
     const body = await req.json();
     const name = String(body.name || "").trim();
     const categoryId = String(body.categoryId || "");
     const price = Number(body.price);
-    if (!name) return NextResponse.json({ error: "\u5546\u54c1\u540d\u79f0\u5fc5\u586b" }, { status: 400 });
-    if (!categoryId) return NextResponse.json({ error: "\u8bf7\u9009\u62e9\u5206\u7c7b" }, { status: 400 });
+    if (!name) return NextResponse.json({ error: "商品名称必填" }, { status: 400 });
+    if (!categoryId) return NextResponse.json({ error: "请选择分类" }, { status: 400 });
     if (Number.isNaN(price) || price < 0) {
-      return NextResponse.json({ error: "\u4ef7\u683c\u65e0\u6548" }, { status: 400 });
+      return NextResponse.json({ error: "价格无效" }, { status: 400 });
     }
 
     const product = await prisma.product.create({
@@ -100,24 +101,25 @@ export async function POST(req: NextRequest) {
         tags: String(body.tags || ""),
         imageUrl: body.imageUrl || null,
         enabled: body.enabled !== false,
+        autoDeliver: Boolean(body.autoDeliver),
       },
     });
 
     return NextResponse.json({ ok: true, product });
   } catch (e) {
     console.error("products POST error", e);
-    return NextResponse.json({ error: "\u521b\u5efa\u5931\u8d25", message: String(e) }, { status: 500 });
+    return NextResponse.json({ error: "创建失败", message: String(e) }, { status: 500 });
   }
 }
 
 export async function PATCH(req: NextRequest) {
   try {
     const admin = await requireAdmin();
-    if (!admin) return NextResponse.json({ error: "\u65e0\u6743\u9650" }, { status: 403 });
+    if (!admin) return NextResponse.json({ error: "无权限" }, { status: 403 });
 
     const body = await req.json();
     const id = String(body.id || "");
-    if (!id) return NextResponse.json({ error: "\u7f3a\u5c11 id" }, { status: 400 });
+    if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
 
     const data: Record<string, unknown> = {};
     if (body.name !== undefined) data.name = String(body.name).trim();
@@ -128,23 +130,24 @@ export async function PATCH(req: NextRequest) {
     if (body.tags !== undefined) data.tags = String(body.tags);
     if (body.imageUrl !== undefined) data.imageUrl = body.imageUrl || null;
     if (body.enabled !== undefined) data.enabled = Boolean(body.enabled);
+    if (body.autoDeliver !== undefined) data.autoDeliver = Boolean(body.autoDeliver);
 
     const product = await prisma.product.update({ where: { id }, data });
     return NextResponse.json({ ok: true, product });
   } catch (e) {
     console.error("products PATCH error", e);
-    return NextResponse.json({ error: "\u66f4\u65b0\u5931\u8d25" }, { status: 500 });
+    return NextResponse.json({ error: "更新失败" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
     const admin = await requireAdmin();
-    if (!admin) return NextResponse.json({ error: "\u65e0\u6743\u9650" }, { status: 403 });
+    if (!admin) return NextResponse.json({ error: "无权限" }, { status: 403 });
 
     const body = await req.json();
     const id = String(body.id || "");
-    if (!id) return NextResponse.json({ error: "\u7f3a\u5c11 id" }, { status: 400 });
+    if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
 
     const orderCount = await prisma.order.count({ where: { productId: id } });
     if (orderCount > 0) {
@@ -152,14 +155,15 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({
         ok: true,
         softDeleted: true,
-        message: "\u8be5\u5546\u54c1\u5df2\u6709\u8ba2\u5355\uff0c\u5df2\u6539\u4e3a\u4e0b\u67b6\u800c\u975e\u5220\u9664",
+        message: "该商品已有订单，已改为下架而非删除",
       });
     }
 
+    await prisma.cardCode.deleteMany({ where: { productId: id } });
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("products DELETE error", e);
-    return NextResponse.json({ error: "\u5220\u9664\u5931\u8d25" }, { status: 500 });
+    return NextResponse.json({ error: "删除失败" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { generateOrderNo, isValidOrderStatus, ORDER_STATUSES } from "@/lib/order";
 import { expireOneIfNeeded, expirePendingOrders } from "@/lib/order-expire";
+import { tryAutoDeliver } from "@/lib/deliver";
 import { resolvePaymentProvider } from "@/lib/payment";
 import { getConfig } from "@/lib/config";
 
@@ -26,11 +27,6 @@ function isTruthyConfig(v: string | undefined): boolean {
   return s === "true" || s === "1" || s === "yes";
 }
 
-/**
- * POST /api/orders
- * Body: { productId, remark? }
- * Payment: mock → immediate PAID; alipay/wechat skeleton → PENDING + optional payUrl
- */
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
@@ -59,6 +55,19 @@ export async function POST(req: NextRequest) {
     }
     if (product.stockStatus === "SOLD_OUT") {
       return NextResponse.json({ error: "商品已售罄" }, { status: 400 });
+    }
+
+    // Auto-deliver products: require at least one card if autoDeliver
+    if (product.autoDeliver) {
+      const left = await prisma.cardCode.count({
+        where: { productId: product.id, status: "UNUSED" },
+      });
+      if (left === 0) {
+        return NextResponse.json(
+          { error: "该商品卡密已售罄，请稍后再试或联系客服" },
+          { status: 400 }
+        );
+      }
     }
 
     await expirePendingOrders().catch(() => 0);
@@ -90,16 +99,22 @@ export async function POST(req: NextRequest) {
 
     let finalStatus = order.status;
     let paidAt: Date | null = null;
+    let deliveryContent = "";
 
     if (payResult.success) {
-      finalStatus = "PAID";
       paidAt = new Date();
       await prisma.order.update({
         where: { id: order.id },
         data: { status: "PAID", paidAt },
       });
+      const d = await tryAutoDeliver(order.id);
+      if (d.ok && d.delivered) {
+        finalStatus = "DELIVERED";
+        deliveryContent = d.code;
+      } else {
+        finalStatus = "PAID";
+      }
     } else if (!payResult.pending && !payResult.payUrl) {
-      // Hard failure (e.g. provider not configured) — cancel order
       finalStatus = "CANCELLED";
       const failRemark = payResult.message
         ? `${remark ? remark + "\n" : ""}[支付失败] ${payResult.message}`.slice(
@@ -132,7 +147,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    // pending + payUrl → leave PENDING for user to pay / notify callback
 
     return NextResponse.json({
       ok: true,
@@ -143,6 +157,7 @@ export async function POST(req: NextRequest) {
         status: finalStatus,
         productName: order.product.name,
         remark: order.remark,
+        deliveryContent: deliveryContent || undefined,
         paidAt,
         payment: {
           provider: provider.name,
@@ -199,6 +214,7 @@ export async function GET(req: NextRequest) {
           createdAt: order.createdAt,
           paidAt: order.paidAt,
           remark: order.remark,
+          deliveryContent: order.deliveryContent || "",
         },
       });
     }
@@ -252,6 +268,7 @@ export async function GET(req: NextRequest) {
           amount: o.amount,
           status: o.status,
           remark: o.remark,
+          deliveryContent: o.deliveryContent || "",
           productId: o.productId,
           productName: o.product.name,
           userId: o.userId,
@@ -293,6 +310,7 @@ export async function GET(req: NextRequest) {
         createdAt: o.createdAt,
         paidAt: o.paidAt,
         remark: o.remark,
+        deliveryContent: o.deliveryContent || "",
       })),
     });
   } catch (e) {
@@ -351,7 +369,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "无更新字段" }, { status: 400 });
     }
 
-    const order = await prisma.order.update({
+    let order = await prisma.order.update({
       where: { id },
       data,
       include: {
@@ -359,6 +377,18 @@ export async function PATCH(req: NextRequest) {
         user: { select: { username: true } },
       },
     });
+
+    // Admin marks PAID → try auto deliver
+    if (data.status === "PAID" || body.tryDeliver) {
+      await tryAutoDeliver(id);
+      order = await prisma.order.findUniqueOrThrow({
+        where: { id },
+        include: {
+          product: { select: { name: true } },
+          user: { select: { username: true } },
+        },
+      });
+    }
 
     return NextResponse.json({
       ok: true,
@@ -368,6 +398,7 @@ export async function PATCH(req: NextRequest) {
         amount: order.amount,
         status: order.status,
         remark: order.remark,
+        deliveryContent: order.deliveryContent || "",
         productName: order.product.name,
         username: order.user?.username ?? "游客",
         createdAt: order.createdAt,

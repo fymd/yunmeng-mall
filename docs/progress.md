@@ -2,20 +2,20 @@
 
 ## Current Status
 
-**T29 Enhanced payment result page**: ✅ DONE  
-**Last Update**: 2026-10-10 05:05 JST
+**T30 Card auto-delivery**: ✅ DONE  
+**Last Update**: 2026-10-10 05:15 JST
 
-## Post-MVP
-- [x] T28 支付结果页基础版
-- [x] **T29 支付完成页增强展示**
+## T30 Features
+- `CardCode` model + `Product.autoDeliver` + `Order.deliveryContent`
+- `tryAutoDeliver()` on mock pay / payment notify / admin mark PAID
+- Admin `/admin/cards` bulk import (enables autoDeliver)
+- Buyer sees卡密 on `/pay/result` and order query when delivered
+- Stock badge updates from remaining unused cards
 
-### T29 Features
-- Receipt-style card + gradient header by status
-- Progress timeline: 下单 → 支付 → 发货 → 完成
-- Large amount on success; copy orderNo; print receipt
-- CS block from public config (QQ / WeChat / link)
-- Pending auto-poll retained
-
-URL: `/pay/result?orderNo=`
+### Local
+```bash
+npx prisma db push
+# Admin → 卡密发货 → import codes for a product
+```
 
 Repo: https://github.com/fymd/yunmeng-mall
