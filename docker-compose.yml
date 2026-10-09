@@ -6,12 +6,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://yunmeng:yunmeng@db:5432/yunmeng?schema=public
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me-in-production}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
-      - PAYMENT_MODE=${PAYMENT_MODE:-mock}
+      DATABASE_URL: postgresql://yunmeng:yunmeng@db:5432/yunmeng?schema=public
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production-please}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      PAYMENT_MODE: ${PAYMENT_MODE:-mock}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - uploads:/app/public/uploads
     restart: unless-stopped
@@ -26,6 +27,11 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yunmeng -d yunmeng"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
 volumes:

@@ -5,47 +5,56 @@
 ## Current Status
 
 **Phase**: sdlc-build (Implementation)  
-**Current Task**: T4 — Config + Payment wired **DONE**  
-**Last Update**: 2026-10-09 17:55 CST
+**Current Task**: T5 — Docker Compose **DONE** → Milestone 1 complete  
+**Last Update**: 2026-10-09 18:20 CST
 
 ## Milestone Overview
 
 | Milestone | Status | Tasks |
 |-----------|--------|-------|
-| 1. Foundation | 🔄 Almost done | T1–T5 |
-| 2. Catalog | ⏳ Pending | T6–T8 |
+| 1. Foundation | ✅ **Complete** | T1–T5 |
+| 2. Catalog | ⏳ Next | T6–T8 |
 | 3. Auth & Order | ⏳ Pending | T9–T12 |
 | 4. Admin / Config | ⏳ Pending | T13–T17 |
 | 5. Polish & Ship | ⏳ Pending | T18–T22 |
 
 ## Task Status
 
-### Milestone 1 — Foundation
-- [x] **T1** Project init — done
-- [x] **T1b** Prisma schema + payment abstraction + config + Docker skeleton — done
-- [x] **T2** Schema + seed script — done
-- [x] **T3** Basic responsive layout — done
-- [x] **T4** Config service + Payment Provider fully wired — **DONE**
-- [ ] **T5** Docker Compose verified
+### Milestone 1 — Foundation ✅
+- [x] T1 Project init
+- [x] T1b Prisma + payment + config + Docker skeleton
+- [x] T2 Schema + seed
+- [x] T3 Responsive layout
+- [x] T4 Config API + Payment API + health
+- [x] **T5 Docker Compose verified (files ready)**
 
-### T4 Deliverables
-- `GET /api/config` — read public site config
-- `POST /api/config` — set config (admin guard in T13)
-- `POST /api/payment/mock` — create mock payment
-- `GET /api/health` — health check (site_name + payment provider)
-- `src/lib/order.ts` — generateOrderNo()
+### T5 Deliverables
+- `Dockerfile` multi-stage + Prisma generate for alpine
+- `docker-compose.yml` (app + Postgres 16 + healthcheck + volumes)
+- `scripts/docker-entrypoint.sh` (wait DB + prisma db push)
+- `scripts/backup.sh` / `scripts/deploy.sh` (one-click)
+- `next.config.ts` → `output: "standalone"`
+- Local still uses SQLite; Docker auto-switches schema to PostgreSQL at build
 
-### Test after seed
+### Cloud host quick start
 ```bash
+git clone https://github.com/fymd/yunmeng-mall.git
+cd yunmeng-mall
+cp .env.example .env   # edit secrets
+docker compose up -d --build
+# then seed once:
+docker compose exec app npx tsx prisma/seed.ts   # or run seed after first start
 curl http://localhost:3000/api/health
-curl http://localhost:3000/api/config
-curl -X POST http://localhost:3000/api/payment/mock \
-  -H 'Content-Type: application/json' \
-  -d '{"orderNo":"YM001","amount":99,"subject":"test","userId":"u1"}'
 ```
 
-## How to Follow
+### Backup / Deploy
+```bash
+./scripts/backup.sh
+./scripts/deploy.sh
+```
 
-1. Progress: https://github.com/fymd/yunmeng-mall/blob/main/docs/progress.md
-2. Commits: https://github.com/fymd/yunmeng-mall/commits/main
-3. Repo: https://github.com/fymd/yunmeng-mall
+## Next: Milestone 2 — Catalog (T6 Category API + sidebar)
+
+## How to Follow
+1. https://github.com/fymd/yunmeng-mall/blob/main/docs/progress.md
+2. https://github.com/fymd/yunmeng-mall/commits/main
