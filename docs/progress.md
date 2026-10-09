@@ -2,24 +2,28 @@
 
 ## Current Status
 
-**T11 Order query**: ✅ DONE  
-**Last Update**: 2026-10-09 20:40 CST
+**T13 Admin layout + role guard**: ✅ DONE  
+**Last Update**: 2026-10-09 20:45 CST
 
-## Milestone 3 — Auth & Order
-- [x] T9 Register / Login
-- [x] T10 Create order + Mock payment
-- [x] **T11 Order query page**
-- [ ] T12 Order status polish (optional, mostly covered)
+## Milestone 4 — Admin / Config
+- [x] **T13** Admin layout + role guard + dashboard
+- [ ] T14 Category CRUD
+- [ ] T15 Product CRUD + publish
+- [ ] T16 Order management
+- [ ] T17 Site + Payment config UI
 
-### T11 Features
-- Query by order number (no login required)
-- My orders list (login required)
-- Deep link: `/orders?orderNo=YMxxx`
-- Copy order number
-- Refresh list
-- Status badges + paid time + remark
-- Status help text
+### T13 Features
+- `/admin` protected: must login + role=ADMIN
+- Non-admin sees 「无访问权限」
+- Side nav: 概览 / 分类 / 商品 / 订单 / 站点配置
+- Dashboard stats cards + quick links
+- Placeholder pages for T14–T17
 
-## Next: T12 (optional) or Milestone 4 Admin (T13)
+### Access
+1. Login as `admin` / `admin123`
+2. Open http://localhost:3000/admin
+   or click 「管理后台」 in Header
+
+## Next: T14 Category CRUD
 
 Repo: https://github.com/fymd/yunmeng-mall
