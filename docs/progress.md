@@ -5,8 +5,8 @@
 ## Current Status
 
 **Phase**: sdlc-build (Implementation)  
-**Current Task**: T1 — Project initialization (almost done) + starting T2  
-**Last Update**: 2026-10-09 15:20 HKT
+**Current Task**: T2 — Schema + Seed (script ready, local migrate pending due to sandbox npm)  
+**Last Update**: 2026-10-09 17:10 CST
 
 ## Milestone Overview
 
@@ -21,37 +21,34 @@
 ## Task Status
 
 ### Milestone 1 — Foundation
-- [x] **T1** Project init (Next.js + TS + Tailwind) — scaffold done
-- [~] **T1b** Prisma schema + payment abstraction + config service + Docker skeleton — **just pushed**
-- [ ] **T2** Schema migrate + seed data (admin + sample products)
+- [x] **T1** Project init (Next.js + TS + Tailwind) — done
+- [x] **T1b** Prisma schema + payment abstraction + config + Docker skeleton — done
+- [~] **T2** Schema migrate + seed data — **seed script + package.json ready** (run `npm install && npx prisma db push && npm run db:seed` locally)
 - [ ] **T3** Basic responsive layout
-- [ ] **T4** Config service + Payment Provider fully wired
+- [ ] **T4** Config + Payment fully wired in app
 - [ ] **T5** Docker Compose verified
 
-### Milestone 2 — Catalog
-- [ ] T6 Category API + sidebar
-- [ ] T7 Product list + search + badges
-- [ ] T8 Product detail
+### Seed Accounts (after running seed)
+- Admin: `admin` / `admin123`
+- Demo user: `demo` / `user123`
 
-### Milestone 3 — Auth & Order
-- [ ] T9 Register / Login
-- [ ] T10 Create order + Mock payment
-- [ ] T11 Order query
-- [ ] T12 Order status pages
+### Sample Data
+- Categories: GPT, Claude, 推特
+- 5 sample products with different stock statuses
+- Default site config + announcement
 
-### Milestone 4 — Admin
-- [ ] T13 Admin layout + guard
-- [ ] T14 Category CRUD
-- [ ] T15 Product CRUD + publish
-- [ ] T16 Order management
-- [ ] T17 Site + Payment config UI
+## How to run T2 locally
 
-### Milestone 5 — Ship
-- [ ] T18 Announcement
-- [ ] T19 Tests
-- [ ] T20 One-click backup/restore/deploy scripts
-- [ ] T21 README + CI
-- [ ] T22 Final review
+```bash
+git clone https://github.com/fymd/yunmeng-mall.git
+cd yunmeng-mall
+npm install
+cp .env.example .env   # or use existing .env with DATABASE_URL="file:./dev.db"
+npx prisma generate
+npx prisma db push
+npm run db:seed
+npm run dev
+```
 
 ## How to Follow
 
