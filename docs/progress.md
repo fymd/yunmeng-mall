@@ -5,8 +5,8 @@
 ## Current Status
 
 **Phase**: sdlc-build (Implementation)  
-**Current Task**: T2 — Schema + Seed (script ready, local migrate pending due to sandbox npm)  
-**Last Update**: 2026-10-09 17:10 CST
+**Current Task**: T3 — Basic responsive layout **DONE**  
+**Last Update**: 2026-10-09 17:25 CST
 
 ## Milestone Overview
 
@@ -23,31 +23,25 @@
 ### Milestone 1 — Foundation
 - [x] **T1** Project init (Next.js + TS + Tailwind) — done
 - [x] **T1b** Prisma schema + payment abstraction + config + Docker skeleton — done
-- [~] **T2** Schema migrate + seed data — **seed script + package.json ready** (run `npm install && npx prisma db push && npm run db:seed` locally)
-- [ ] **T3** Basic responsive layout
-- [ ] **T4** Config + Payment fully wired in app
+- [x] **T2** Schema + seed script — done
+- [x] **T3** Basic responsive layout — **DONE**
+- [ ] **T4** Config service + Payment Provider fully wired
 - [ ] **T5** Docker Compose verified
 
-### Seed Accounts (after running seed)
-- Admin: `admin` / `admin123`
-- Demo user: `demo` / `user123`
+### Layout Features (T3)
+- Sticky header with logo, nav (购物/订单查询/帮助中心), login/register
+- Left category sidebar (placeholder, ready for API)
+- Product list with search, price, stock badge, buy button
+- Responsive (mobile stacks sidebar above content)
+- Footer with links
 
-### Sample Data
-- Categories: GPT, Claude, 推特
-- 5 sample products with different stock statuses
-- Default site config + announcement
-
-## How to run T2 locally
+## How to preview
 
 ```bash
-git clone https://github.com/fymd/yunmeng-mall.git
-cd yunmeng-mall
+git pull
 npm install
-cp .env.example .env   # or use existing .env with DATABASE_URL="file:./dev.db"
-npx prisma generate
-npx prisma db push
-npm run db:seed
 npm run dev
+# open http://localhost:3000
 ```
 
 ## How to Follow
