@@ -2,28 +2,25 @@
 
 ## Current Status
 
-**T13 Admin layout + role guard**: ✅ DONE  
-**Last Update**: 2026-10-09 20:45 CST
+**T14 Category CRUD**: ✅ DONE  
+**Last Update**: 2026-10-09 22:50 JST
 
-## Milestone 4 — Admin / Config
-- [x] **T13** Admin layout + role guard + dashboard
-- [ ] T14 Category CRUD
-- [ ] T15 Product CRUD + publish
+## Milestone 4 — Admin
+- [x] T13 Admin layout + guard
+- [x] **T14 Category CRUD**
+- [ ] T15 Product CRUD
 - [ ] T16 Order management
-- [ ] T17 Site + Payment config UI
+- [ ] T17 Site config
 
-### T13 Features
-- `/admin` protected: must login + role=ADMIN
-- Non-admin sees 「无访问权限」
-- Side nav: 概览 / 分类 / 商品 / 订单 / 站点配置
-- Dashboard stats cards + quick links
-- Placeholder pages for T14–T17
+### T14 Features
+- GET /api/categories?all=1 (admin, includes disabled)
+- POST / PATCH / DELETE (admin only)
+- Admin UI: list, create, edit, enable/disable, delete (blocked if has products)
+- Sort field supported
 
 ### Access
-1. Login as `admin` / `admin123`
-2. Open http://localhost:3000/admin
-   or click 「管理后台」 in Header
+Login as admin → /admin/categories
 
-## Next: T14 Category CRUD
+## Next: T15 Product CRUD
 
 Repo: https://github.com/fymd/yunmeng-mall
