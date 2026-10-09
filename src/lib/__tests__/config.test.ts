@@ -4,7 +4,7 @@ import {
   SENSITIVE_KEYS,
   DEFAULTS,
   isSensitiveKey,
-} from "../config";
+} from "../config-keys";
 
 describe("config key sets", () => {
   it("PUBLIC_KEYS has no overlap with sensitive patterns", () => {

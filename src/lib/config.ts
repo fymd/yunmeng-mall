@@ -1,64 +1,12 @@
 import { prisma } from "./prisma";
+import {
+  PUBLIC_KEYS,
+  SENSITIVE_KEYS,
+  DEFAULTS,
+  isSensitiveKey,
+} from "./config-keys";
 
-/** Public keys safe to expose to any visitor */
-export const PUBLIC_KEYS = [
-  "site_name",
-  "site_logo",
-  "customer_service_qq",
-  "customer_service_wechat",
-  "customer_service_link",
-  "announcement_title",
-  "announcement_content",
-  "announcement_popup",
-  "payment_mode",
-  "force_login_to_order",
-  "order_timeout_minutes",
-] as const;
-
-/** Sensitive keys only returned to admin (values may be masked in UI) */
-export const SENSITIVE_KEYS = [
-  "alipay_app_id",
-  "alipay_private_key",
-  "alipay_public_key",
-  "alipay_notify_url",
-  "wechat_app_id",
-  "wechat_mch_id",
-  "wechat_api_key",
-  "wechat_notify_url",
-] as const;
-
-export const DEFAULTS: Record<string, string> = {
-  site_name: "云梦AI代充",
-  site_logo: "",
-  customer_service_qq: "",
-  customer_service_wechat: "",
-  customer_service_link: "",
-  announcement_title: "公告",
-  announcement_content: "欢迎使用云梦AI代充商城。支付相关问题请联系客服。",
-  announcement_popup: "true",
-  payment_mode: "mock",
-  force_login_to_order: "true",
-  order_timeout_minutes: "30",
-  alipay_app_id: "",
-  alipay_private_key: "",
-  alipay_public_key: "",
-  alipay_notify_url: "",
-  wechat_app_id: "",
-  wechat_mch_id: "",
-  wechat_api_key: "",
-  wechat_notify_url: "",
-};
-
-function isSensitiveKey(key: string): boolean {
-  const k = key.toLowerCase();
-  return (
-    k.includes("private") ||
-    k.includes("secret") ||
-    k.includes("api_key") ||
-    k.includes("cert") ||
-    SENSITIVE_KEYS.includes(key as (typeof SENSITIVE_KEYS)[number])
-  );
-}
+export { PUBLIC_KEYS, SENSITIVE_KEYS, DEFAULTS, isSensitiveKey };
 
 export async function getConfig(key: string): Promise<string> {
   try {
@@ -107,5 +55,3 @@ export async function getPublicConfig(): Promise<Record<string, string>> {
 export async function getAdminConfig(): Promise<Record<string, string>> {
   return getAllConfig();
 }
-
-export { isSensitiveKey };

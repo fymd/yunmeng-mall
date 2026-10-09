@@ -11,6 +11,12 @@ import {
   SENSITIVE_KEYS,
 } from "@/lib/config";
 import { getSessionUser } from "@/lib/auth";
+import {
+  forbidden,
+  badRequest,
+  serverError,
+  parseJsonBody,
+} from "@/lib/api-error";
 
 async function requireAdmin() {
   const user = await getSessionUser();
@@ -37,9 +43,7 @@ export async function GET(req: NextRequest) {
 
     if (all) {
       const admin = await requireAdmin();
-      if (!admin) {
-        return NextResponse.json({ error: "无权限" }, { status: 403 });
-      }
+      if (!admin) return forbidden();
       const config = await getAdminConfig();
       return NextResponse.json({ config });
     }
@@ -47,9 +51,7 @@ export async function GET(req: NextRequest) {
     if (key) {
       if (isSensitiveKey(key)) {
         const admin = await requireAdmin();
-        if (!admin) {
-          return NextResponse.json({ error: "无权限" }, { status: 403 });
-        }
+        if (!admin) return forbidden();
       }
       const value = await getConfig(key);
       return NextResponse.json({ key, value });
@@ -58,11 +60,7 @@ export async function GET(req: NextRequest) {
     const publicConfig = await getPublicConfig();
     return NextResponse.json(publicConfig);
   } catch (e) {
-    console.error("config GET error", e);
-    return NextResponse.json(
-      { error: "Failed to load config" },
-      { status: 500 }
-    );
+    return serverError("Failed to load config", e);
   }
 }
 
@@ -74,20 +72,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const admin = await requireAdmin();
-    if (!admin) {
-      return NextResponse.json({ error: "无权限" }, { status: 403 });
-    }
+    if (!admin) return forbidden();
 
-    const body = await req.json();
+    const { data: body, error: parseError } = await parseJsonBody(req);
+    if (parseError || !body) return badRequest(parseError || "无效请求体");
 
     if (body.configs && typeof body.configs === "object") {
       const configs = body.configs as Record<string, unknown>;
       const toSave: Record<string, string> = {};
       for (const [k, v] of Object.entries(configs)) {
-        if (!ALLOWED_KEYS.has(k) && !Object.prototype.hasOwnProperty.call(DEFAULTS, k)) {
-          continue;
-        }
-        // Skip empty overwrite for sensitive keys if value is placeholder mask
+        if (!ALLOWED_KEYS.has(k) && !(k in DEFAULTS)) continue;
         if (typeof v === "string" && v === "********" && isSensitiveKey(k)) {
           continue;
         }
@@ -97,15 +91,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, updated: Object.keys(toSave) });
     }
 
-    const { key, value } = body as { key?: string; value?: string };
+    const key = body.key as string | undefined;
+    const value = body.value as string | undefined;
     if (!key || value === undefined) {
-      return NextResponse.json(
-        { error: "key and value required, or configs object" },
-        { status: 400 }
-      );
+      return badRequest("key and value required, or configs object");
     }
     if (!ALLOWED_KEYS.has(key) && !(key in DEFAULTS)) {
-      return NextResponse.json({ error: "不允许的配置项: " + key }, { status: 400 });
+      return badRequest("不允许的配置项: " + key);
     }
     if (value === "********" && isSensitiveKey(key)) {
       return NextResponse.json({ ok: true, key, skipped: true });
@@ -113,10 +105,6 @@ export async function POST(req: NextRequest) {
     await setConfig(key, String(value));
     return NextResponse.json({ ok: true, key, value });
   } catch (e) {
-    console.error("config POST error", e);
-    return NextResponse.json(
-      { error: "Failed to save config" },
-      { status: 500 }
-    );
+    return serverError("Failed to save config", e);
   }
 }
