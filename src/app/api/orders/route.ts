@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { generateOrderNo, isValidOrderStatus, ORDER_STATUSES } from "@/lib/order";
 import { expireOneIfNeeded, expirePendingOrders } from "@/lib/order-expire";
-import { getPaymentProvider } from "@/lib/payment";
+import { resolvePaymentProvider } from "@/lib/payment";
 import { getConfig } from "@/lib/config";
 
 type OrderStatusType = (typeof ORDER_STATUSES)[number];
@@ -29,8 +29,7 @@ function isTruthyConfig(v: string | undefined): boolean {
 /**
  * POST /api/orders
  * Body: { productId, remark? }
- * Login required when config force_login_to_order=true (default).
- * Guest orders allowed when force_login_to_order=false (userId null).
+ * Payment: mock → immediate PAID; alipay/wechat skeleton → PENDING + optional payUrl
  */
 export async function POST(req: NextRequest) {
   try {
@@ -62,7 +61,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "商品已售罄" }, { status: 400 });
     }
 
-    // Opportunistic cleanup of stale pending orders
     await expirePendingOrders().catch(() => 0);
 
     const orderNo = generateOrderNo();
@@ -82,8 +80,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const mode = await getConfig("payment_mode");
-    const provider = getPaymentProvider(mode);
+    const provider = await resolvePaymentProvider();
     const payResult = await provider.createPayment({
       orderNo,
       amount,
@@ -101,7 +98,41 @@ export async function POST(req: NextRequest) {
         where: { id: order.id },
         data: { status: "PAID", paidAt },
       });
+    } else if (!payResult.pending && !payResult.payUrl) {
+      // Hard failure (e.g. provider not configured) — cancel order
+      finalStatus = "CANCELLED";
+      const failRemark = payResult.message
+        ? `${remark ? remark + "\n" : ""}[支付失败] ${payResult.message}`.slice(
+            0,
+            MAX_REMARK_LEN
+          )
+        : remark;
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { status: "CANCELLED", remark: failRemark },
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: payResult.message || "支付发起失败",
+          order: {
+            id: order.id,
+            orderNo: order.orderNo,
+            amount: order.amount,
+            status: finalStatus,
+            productName: order.product.name,
+            remark: failRemark,
+            payment: {
+              provider: provider.name,
+              success: false,
+              message: payResult.message,
+            },
+          },
+        },
+        { status: 400 }
+      );
     }
+    // pending + payUrl → leave PENDING for user to pay / notify callback
 
     return NextResponse.json({
       ok: true,
@@ -116,7 +147,9 @@ export async function POST(req: NextRequest) {
         payment: {
           provider: provider.name,
           success: payResult.success,
+          pending: payResult.pending ?? false,
           paymentId: payResult.paymentId,
+          payUrl: payResult.payUrl,
           message: payResult.message,
         },
       },
@@ -130,10 +163,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * GET /api/orders
- * Runs expirePendingOrders before returning lists / single order.
- */
 export async function GET(req: NextRequest) {
   try {
     await expirePendingOrders().catch(() => 0);

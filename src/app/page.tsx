@@ -38,6 +38,9 @@ export default function HomePage() {
     productName: string;
     amount: number;
     remark?: string;
+    status?: string;
+    payUrl?: string;
+    paymentMessage?: string;
   } | null>(null);
 
   const loadProducts = useCallback(async () => {
@@ -94,12 +97,20 @@ export default function HomePage() {
         return;
       }
       setDetailOpen(false);
+      const pay = data.order?.payment;
       setOrderSuccess({
         orderNo: data.order.orderNo,
         productName: data.order.productName,
         amount: data.order.amount,
         remark: data.order.remark || remark || undefined,
+        status: data.order.status,
+        payUrl: pay?.payUrl,
+        paymentMessage: pay?.message,
       });
+      if (pay?.payUrl && typeof window !== "undefined") {
+        // Optional: open payment page for real/skeleton gateways
+        // window.open(pay.payUrl, "_blank");
+      }
     } catch {
       alert("网络错误，请重试");
     } finally {
@@ -222,8 +233,12 @@ export default function HomePage() {
             onClick={() => setOrderSuccess(null)}
           />
           <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
-            <div className="text-3xl">✅</div>
-            <h3 className="mt-2 text-lg font-semibold text-gray-900">下单成功</h3>
+            <div className="text-3xl">
+              {orderSuccess.status === "PAID" ? "✅" : "⏳"}
+            </div>
+            <h3 className="mt-2 text-lg font-semibold text-gray-900">
+              {orderSuccess.status === "PAID" ? "下单成功" : "订单已创建"}
+            </h3>
             <p className="mt-1 text-sm text-gray-600">{orderSuccess.productName}</p>
             <p className="mt-2 text-xl font-bold text-indigo-600">
               ¥{Number(orderSuccess.amount).toFixed(2)}
@@ -236,20 +251,36 @@ export default function HomePage() {
                 备注：{orderSuccess.remark}
               </p>
             )}
-            <p className="mt-1 text-xs text-green-600">模拟支付已完成</p>
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={() => setOrderSuccess(null)}
-                className="flex-1 rounded-lg border border-gray-300 py-2 text-sm"
-              >
-                继续购物
-              </button>
-              <a
-                href={"/orders?orderNo=" + encodeURIComponent(orderSuccess.orderNo)}
-                className="flex-1 rounded-lg bg-indigo-600 py-2 text-center text-sm text-white"
-              >
-                查看订单
-              </a>
+            {orderSuccess.status === "PAID" ? (
+              <p className="mt-1 text-xs text-green-600">模拟支付已完成</p>
+            ) : (
+              <p className="mt-1 text-xs text-amber-600">
+                {orderSuccess.paymentMessage || "请完成支付（订单待支付）"}
+              </p>
+            )}
+            <div className="mt-4 flex flex-col gap-2">
+              {orderSuccess.payUrl && (
+                <a
+                  href={orderSuccess.payUrl}
+                  className="rounded-lg bg-emerald-600 py-2 text-center text-sm text-white hover:bg-emerald-700"
+                >
+                  前往支付
+                </a>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOrderSuccess(null)}
+                  className="flex-1 rounded-lg border border-gray-300 py-2 text-sm"
+                >
+                  继续购物
+                </button>
+                <a
+                  href={"/orders?orderNo=" + encodeURIComponent(orderSuccess.orderNo)}
+                  className="flex-1 rounded-lg bg-indigo-600 py-2 text-center text-sm text-white"
+                >
+                  查看订单
+                </a>
+              </div>
             </div>
           </div>
         </div>

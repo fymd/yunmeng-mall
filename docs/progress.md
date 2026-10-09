@@ -2,25 +2,19 @@
 
 ## Current Status
 
-**T25 force login + order timeout**: ✅ DONE  
-**Last Update**: 2026-10-10 04:35 JST
+**T26 Payment provider skeleton**: ✅ DONE  
+**Last Update**: 2026-10-10 04:45 JST
 
 ## Post-MVP
-- [x] T1–T22 MVP complete
-- [x] T24 下单备注
-- [x] T23 修改密码
-- [x] **T25 强制登录 / 订单超时**
+- [x] T1–T22 MVP
+- [x] T23 改密 · T24 备注 · T25 强制登录/超时
+- [x] **T26 支付宝/微信 Provider 骨架**
 
-### T25 Features
-- `force_login_to_order`：为 true 时未登录下单返回 401；为 false 时允许游客下单（`userId` 可空）
-- `order_timeout_minutes`：仅对 PENDING 生效；查询/下单时 `expirePendingOrders` 自动取消并写备注
-- 配置页说明已更新；单元测试 `tests/order-timeout.test.ts`
-- Schema：`Order.userId` 改为可选
-
-### 本地注意
-拉取后执行一次 `npx prisma db push`（userId 可空）
-
-## Suggested next
-- T26 真实支付 Provider 骨架
+### T26 Features
+- `src/lib/payment/*`：Mock / Alipay / Wechat + `resolvePaymentProvider`
+- 未配置密钥 → 下单失败并取消订单；已配置 → PENDING + `payUrl`（stub）
+- Notify：`/api/payment/alipay/notify`、`/api/payment/wechat/notify` + `markOrderPaidByOrderNo`
+- 前台成功弹窗支持「前往支付」
+- 文档：`docs/payment.md`；测试：`tests/payment.test.ts`
 
 Repo: https://github.com/fymd/yunmeng-mall
