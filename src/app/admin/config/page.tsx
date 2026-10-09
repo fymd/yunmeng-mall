@@ -80,6 +80,7 @@ export default function AdminConfigPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testingMail, setTestingMail] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [dirtySensitive, setDirtySensitive] = useState<Set<string>>(new Set());
@@ -155,6 +156,37 @@ export default function AdminConfigPage() {
       setError("网络错误");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestMail = async () => {
+    setTestingMail(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/mail/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: form.notify_email.trim() || form.smtp_user.trim(),
+          smtp_host: form.smtp_host,
+          smtp_port: form.smtp_port,
+          smtp_user: form.smtp_user,
+          smtp_pass: form.smtp_pass,
+          smtp_from: form.smtp_from,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || data.message || "测试邮件发送失败");
+        return;
+      }
+      setSuccess(`测试邮件已发送至 ${data.to}，请检查收件箱（含垃圾箱）`);
+      setTimeout(() => setSuccess(""), 8000);
+    } catch {
+      setError("网络错误，测试发送失败");
+    } finally {
+      setTestingMail(false);
     }
   };
 
@@ -331,9 +363,6 @@ export default function AdminConfigPage() {
                 }
                 className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
               />
-              <p className="mt-1 text-xs text-gray-400">
-                仅对「待支付」订单生效；填 0 表示不自动取消。
-              </p>
             </div>
           </div>
         </section>
@@ -341,8 +370,8 @@ export default function AdminConfigPage() {
         <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
           <h2 className="text-sm font-semibold text-gray-900">邮件通知（SMTP）</h2>
           <p className="mt-0.5 text-xs text-gray-500">
-            配置后，卡密自动发货等事件会尝试发信。不填 Host 则不发送。密码已保存时显示
-            ********，仅在修改时重新输入。
+            配置后，卡密自动发货等事件会尝试发信。可用「发送测试邮件」验证当前表单中的
+            SMTP（无需先保存；密码为 ******** 时使用已保存密码）。
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div>
@@ -362,7 +391,7 @@ export default function AdminConfigPage() {
                 placeholder="587"
                 className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
               />
-              <p className="mt-1 text-xs text-gray-400">常用 587（STARTTLS）或 465（SSL）</p>
+              <p className="mt-1 text-xs text-gray-400">常用 587 或 465</p>
             </div>
             <div>
               <label className="mb-1 block text-xs text-gray-600">用户名</label>
@@ -402,7 +431,7 @@ export default function AdminConfigPage() {
             </div>
             <div>
               <label className="mb-1 block text-xs text-gray-600">
-                管理员通知邮箱
+                管理员通知 / 测试收件邮箱
               </label>
               <input
                 type="email"
@@ -411,10 +440,20 @@ export default function AdminConfigPage() {
                 placeholder="admin@example.com"
                 className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
               />
-              <p className="mt-1 text-xs text-gray-400">
-                订单发货等事件抄送到此邮箱；用户邮箱在有注册邮箱时另行通知
-              </p>
             </div>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleTestMail}
+              disabled={testingMail || !form.smtp_host.trim()}
+              className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+            >
+              {testingMail ? "发送中…" : "发送测试邮件"}
+            </button>
+            <span className="text-xs text-gray-400">
+              收件优先用「管理员通知邮箱」，否则用 SMTP 用户名
+            </span>
           </div>
         </section>
 

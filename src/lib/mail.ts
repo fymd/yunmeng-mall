@@ -1,30 +1,56 @@
 import { getConfig } from "@/lib/config";
 import { createTransport } from "./mail-transport";
 
+export type SmtpOverride = {
+  host?: string;
+  port?: string | number;
+  user?: string;
+  pass?: string;
+  from?: string;
+};
+
 /**
  * Send transactional email if SMTP is configured.
- * No-op when smtp_host empty (safe for local/dev).
+ * Optional override lets admin test form values before/after save.
  */
 export async function sendMail(opts: {
   to: string;
   subject: string;
   text: string;
+  smtp?: SmtpOverride;
 }): Promise<{ ok: boolean; reason?: string }> {
   const to = (opts.to || "").trim();
   if (!to || !to.includes("@")) {
-    return { ok: false, reason: "invalid to" };
+    return { ok: false, reason: "收件地址无效" };
   }
 
-  const host = (await getConfig("smtp_host")).trim();
+  const host = (
+    opts.smtp?.host ??
+    (await getConfig("smtp_host"))
+  ).trim();
   if (!host) {
-    return { ok: false, reason: "smtp not configured" };
+    return { ok: false, reason: "未配置 SMTP Host" };
   }
 
-  const port = Number((await getConfig("smtp_port")) || "587") || 587;
-  const user = (await getConfig("smtp_user")).trim();
-  const pass = (await getConfig("smtp_pass")).trim();
+  const port =
+    Number(
+      opts.smtp?.port ?? (await getConfig("smtp_port")) ?? "587"
+    ) || 587;
+  const user = (
+    opts.smtp?.user ??
+    (await getConfig("smtp_user"))
+  ).trim();
+  let pass = (opts.smtp?.pass ?? "").trim();
+  if (!pass || pass === "********") {
+    pass = (await getConfig("smtp_pass")).trim();
+  }
   const from =
-    (await getConfig("smtp_from")).trim() || user || "noreply@localhost";
+    (
+      opts.smtp?.from ??
+      (await getConfig("smtp_from"))
+    ).trim() ||
+    user ||
+    "noreply@localhost";
 
   try {
     const transport = createTransport({
