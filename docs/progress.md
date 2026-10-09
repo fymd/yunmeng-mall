@@ -2,28 +2,31 @@
 
 ## Current Status
 
-**T17 Site + Payment config**: ✅ DONE  
-**Last Update**: 2026-10-10 03:50 JST
+**T18 Announcement from config**: ✅ DONE  
+**Last Update**: 2026-10-10 03:55 JST
 
 ## Milestone 4 — Admin
-- [x] T13 Admin layout
-- [x] T14 Category CRUD
-- [x] T15 Product CRUD + publish
-- [x] T16 Order management
-- [x] **T17 Site config**
+- [x] T13–T17 complete
 
-### T17 Features
-- GET /api/config — public keys only
-- GET /api/config?all=1 — full config (admin)
-- POST /api/config — admin batch/single update; sensitive keys masked; skip unchanged ********
-- Admin UI: site name/logo, customer service, announcement, system flags, payment mode + Alipay/WeChat credential fields
-- Header reads site_name from public config
+## Milestone 5 — Polish, Scripts & Ship
+- [x] **T18 Announcement from config**
+- [ ] T19 Core tests + error handling
+- [ ] T20 One-click scripts (backup / restore / deploy)
+- [ ] T21 README + CI
+- [ ] T22 Final review
 
-### Access
-/admin/config (login as admin)
+### T18 Features
+- `Announcement` component: top banner + optional popup from public config
+- Popup uses sessionStorage keyed by title+content hash (re-shows when admin updates text)
+- `CustomerServiceFloat`: bottom-right FAB reads QQ / WeChat / link from config
+- Footer uses `site_name` from config
+- Wired in root `layout.tsx`
 
-## Milestone 4 complete
+### How to verify
+1. Admin → 站点配置 → 改公告标题/内容，开启「弹窗显示」
+2. 前台刷新：顶部黄条 + 弹窗
+3. 关闭弹窗后同会话不再弹出；改公告内容后会再次弹出
 
-## Next: Milestone 5 — T18 Announcement from config (frontend banner/modal)
+## Next: T19 Core tests + error handling
 
 Repo: https://github.com/fymd/yunmeng-mall
