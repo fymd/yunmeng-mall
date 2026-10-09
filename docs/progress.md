@@ -2,20 +2,19 @@
 
 ## Current Status
 
-**T30 Card auto-delivery**: ✅ DONE  
-**Last Update**: 2026-10-10 05:15 JST
+**Batch features (i18n / upload / chat / mail / charts / proxy)**: ✅ DONE  
+**Last Update**: 2026-10-10 05:40 JST
 
-## T30 Features
-- `CardCode` model + `Product.autoDeliver` + `Order.deliveryContent`
-- `tryAutoDeliver()` on mock pay / payment notify / admin mark PAID
-- Admin `/admin/cards` bulk import (enables autoDeliver)
-- Buyer sees卡密 on `/pay/result` and order query when delivered
-- Stock badge updates from remaining unused cards
+### New
+- 中英切换 `LocaleProvider`（Header）
+- 商品图上传 `POST /api/upload` → `/uploads/...`
+- 站内客服留言 `ChatMessage` + 悬浮窗 + 后台消息
+- SMTP 通知配置键 + `notifyOrderEvent`（需配置才发送）
+- 后台概览图表 `/api/stats`
+- `docs/deploy-proxy.md` Nginx/Caddy 示例
 
-### Local
 ```bash
 npx prisma db push
-# Admin → 卡密发货 → import codes for a product
 ```
 
 Repo: https://github.com/fymd/yunmeng-mall

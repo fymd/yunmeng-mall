@@ -72,7 +72,6 @@ model Product {
   tags        String      @default("")
   enabled     Boolean     @default(true)
   imageUrl    String?
-  /// When true, assign one CardCode on payment and set order DELIVERED
   autoDeliver Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -90,7 +89,6 @@ model Order {
   amount          Float
   status          OrderStatus @default(PENDING)
   remark          String      @default("")
-  /// Snapshot of delivered card/secret for buyer display
   deliveryContent String      @default("")
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -110,6 +108,19 @@ model CardCode {
   createdAt DateTime   @default(now())
 
   @@index([productId, status])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   @default("user") // user | admin
+  content   String
+  contact   String   @default("")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
 }
 
 model Config {

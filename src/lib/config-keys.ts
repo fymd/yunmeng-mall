@@ -23,6 +23,7 @@ export const SENSITIVE_KEYS = [
   "wechat_mch_id",
   "wechat_api_key",
   "wechat_notify_url",
+  "smtp_pass",
 ] as const;
 
 export const DEFAULTS: Record<string, string> = {
@@ -45,6 +46,12 @@ export const DEFAULTS: Record<string, string> = {
   wechat_mch_id: "",
   wechat_api_key: "",
   wechat_notify_url: "",
+  smtp_host: "",
+  smtp_port: "587",
+  smtp_user: "",
+  smtp_pass: "",
+  smtp_from: "",
+  notify_email: "",
 };
 
 export function isSensitiveKey(key: string): boolean {
@@ -54,6 +61,7 @@ export function isSensitiveKey(key: string): boolean {
     k.includes("secret") ||
     k.includes("api_key") ||
     k.includes("cert") ||
+    k.includes("smtp_pass") ||
     (SENSITIVE_KEYS as readonly string[]).includes(key)
   );
 }
