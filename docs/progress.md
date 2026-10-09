@@ -2,19 +2,18 @@
 
 ## Current Status
 
-**T26 Payment provider skeleton**: ✅ DONE  
-**Last Update**: 2026-10-10 04:45 JST
+**T27 Real payment providers**: ✅ DONE  
+**Last Update**: 2026-10-10 04:55 JST
 
 ## Post-MVP
-- [x] T1–T22 MVP
-- [x] T23 改密 · T24 备注 · T25 强制登录/超时
-- [x] **T26 支付宝/微信 Provider 骨架**
+- [x] T23–T26
+- [x] **T27 真实支付宝 / 微信对接**
 
-### T26 Features
-- `src/lib/payment/*`：Mock / Alipay / Wechat + `resolvePaymentProvider`
-- 未配置密钥 → 下单失败并取消订单；已配置 → PENDING + `payUrl`（stub）
-- Notify：`/api/payment/alipay/notify`、`/api/payment/wechat/notify` + `markOrderPaidByOrderNo`
-- 前台成功弹窗支持「前往支付」
-- 文档：`docs/payment.md`；测试：`tests/payment.test.ts`
+### T27 Features
+- Alipay: `alipay.trade.page.pay` + RSA2 sign/verify notify
+- WeChat: Native unifiedorder V2 + MD5 sign/verify + QR page
+- Requires public HTTPS notify URLs
+- Tests: `tests/payment-crypto.test.ts`
+- Docs: `docs/payment.md`
 
 Repo: https://github.com/fymd/yunmeng-mall

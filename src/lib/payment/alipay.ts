@@ -1,3 +1,7 @@
+import {
+  alipaySignRsa2,
+  alipayVerifyRsa2,
+} from "./crypto-util";
 import type {
   AlipayCredentials,
   CallbackResult,
@@ -6,11 +10,17 @@ import type {
   PaymentResult,
 } from "./types";
 
+const GATEWAY_PROD = "https://openapi.alipay.com/gateway.do";
+const GATEWAY_SANDBOX = "https://openapi-sandbox.dl.alipaydev.com/gateway.do";
+
+function isSandboxAppId(appId: string): boolean {
+  // Common heuristic; override via notify URL host if needed
+  return appId.startsWith("9021") || process.env.ALIPAY_SANDBOX === "1";
+}
+
 /**
- * Alipay provider skeleton.
- * - Without credentials → soft-fail with clear message (does not charge).
- * - With credentials → placeholder that keeps order PENDING and returns a stub payUrl.
- * Wire real SDK (e.g. alipay-sdk) inside createPayment / verifyCallback later.
+ * Alipay computer website pay (alipay.trade.page.pay).
+ * Requires AppId + merchant private key + Alipay public key + public notify URL.
  */
 export class AlipayPaymentProvider implements PaymentProvider {
   name = "alipay" as const;
@@ -25,6 +35,13 @@ export class AlipayPaymentProvider implements PaymentProvider {
     );
   }
 
+  private gateway(): string {
+    return isSandboxAppId(this.creds.appId) ? GATEWAY_SANDBOX : GATEWAY_PROD;
+  }
+
+  /**
+   * Build signed query for page pay. User opens payUrl in browser to pay.
+   */
   async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
     if (!this.isConfigured()) {
       return {
@@ -35,46 +52,101 @@ export class AlipayPaymentProvider implements PaymentProvider {
       };
     }
 
-    // TODO: call Alipay page/wap pay API, sign with privateKey, return real form/URL.
-    const notify = this.creds.notifyUrl || "/api/payment/alipay/notify";
-    const stubPayUrl = `/api/payment/alipay/stub-pay?orderNo=${encodeURIComponent(input.orderNo)}&amount=${input.amount}`;
+    const notifyUrl = (this.creds.notifyUrl || "").trim();
+    if (!notifyUrl.startsWith("http")) {
+      return {
+        success: false,
+        pending: false,
+        message:
+          "请配置公网可访问的 alipay_notify_url（例如 https://你的域名/api/payment/alipay/notify）",
+      };
+    }
+
+    const bizContent = JSON.stringify({
+      out_trade_no: input.orderNo,
+      product_code: "FAST_INSTANT_TRADE_PAY",
+      total_amount: Number(input.amount).toFixed(2),
+      subject: String(input.subject).slice(0, 256),
+    });
+
+    const params: Record<string, string> = {
+      app_id: this.creds.appId.trim(),
+      method: "alipay.trade.page.pay",
+      format: "JSON",
+      charset: "utf-8",
+      sign_type: "RSA2",
+      timestamp: formatAlipayTimestamp(new Date()),
+      version: "1.0",
+      notify_url: notifyUrl,
+      biz_content: bizContent,
+    };
+
+    try {
+      params.sign = alipaySignRsa2(params, this.creds.privateKey);
+    } catch (e) {
+      return {
+        success: false,
+        pending: false,
+        message: `支付宝私钥签名失败，请检查 PEM 格式: ${String(e)}`,
+      };
+    }
+
+    const qs = Object.keys(params)
+      .map(
+        (k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`
+      )
+      .join("&");
+    const payUrl = `${this.gateway()}?${qs}`;
 
     return {
       success: false,
       pending: true,
-      paymentId: `alipay_pending_${input.orderNo}`,
-      payUrl: stubPayUrl,
-      message: `支付宝骨架：订单保持待支付。配置已识别 AppId=${this.creds.appId.slice(0, 6)}… 回调=${notify}。请接入官方 SDK 后替换 createPayment。`,
+      paymentId: `alipay_${input.orderNo}`,
+      payUrl,
+      message: "请跳转支付宝完成支付；支付成功后将异步通知本站",
     };
   }
 
   async verifyCallback(payload: unknown): Promise<CallbackResult> {
-    // TODO: verify sign with alipay public key; parse out_trade_no / trade_status
-    const p = (payload || {}) as Record<string, string>;
-    const orderNo = String(
-      p.out_trade_no || p.orderNo || p.outTradeNo || ""
-    );
-    const tradeStatus = String(p.trade_status || p.tradeStatus || "");
-    const success =
-      tradeStatus === "TRADE_SUCCESS" ||
-      tradeStatus === "TRADE_FINISHED" ||
-      p.success === "true" ||
-      p.success === "1";
-
-    if (!orderNo) {
-      return { orderNo: "", success: false, raw: payload };
-    }
-
-    // Skeleton: if caller marks success explicitly, accept; otherwise reject unsigned payloads
-    if (!this.isConfigured()) {
+    const p = flattenPayload(payload);
+    const orderNo = String(p.out_trade_no || "");
+    if (!orderNo || !this.isConfigured()) {
       return { orderNo, success: false, raw: payload };
     }
+
+    const signOk = alipayVerifyRsa2(p, this.creds.publicKey);
+    if (!signOk) {
+      console.warn("[alipay] notify sign verify failed");
+      return { orderNo, success: false, raw: payload };
+    }
+
+    const tradeStatus = String(p.trade_status || "");
+    const success =
+      tradeStatus === "TRADE_SUCCESS" || tradeStatus === "TRADE_FINISHED";
 
     return {
       orderNo,
       success,
-      paymentId: p.trade_no || p.tradeNo,
+      paymentId: p.trade_no,
       raw: payload,
     };
   }
+}
+
+function formatAlipayTimestamp(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  );
+}
+
+function flattenPayload(payload: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!payload || typeof payload !== "object") return out;
+  for (const [k, v] of Object.entries(payload as Record<string, unknown>)) {
+    if (v === undefined || v === null) continue;
+    out[k] = String(v);
+  }
+  return out;
 }

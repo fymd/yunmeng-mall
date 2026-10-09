@@ -3,10 +3,7 @@ import { resolvePaymentProvider } from "@/lib/payment";
 import { markOrderPaidByOrderNo } from "@/lib/payment/mark-paid";
 
 /**
- * POST /api/payment/alipay/notify
- * Alipay async notify endpoint (skeleton).
- * Production: verify signature via AlipayPaymentProvider.verifyCallback, then mark paid.
- * Responds "success" / "fail" per Alipay convention when applicable.
+ * POST /api/payment/alipay/notify — Alipay async notify (form body)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -39,6 +36,7 @@ export async function POST(req: NextRequest) {
       return new NextResponse("fail", { status: 404 });
     }
 
+    // Alipay expects plain text "success"
     return new NextResponse("success", { status: 200 });
   } catch (e) {
     console.error("[alipay notify]", e);
@@ -46,11 +44,10 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** GET for health / misconfigured probe */
 export async function GET() {
   return NextResponse.json({
     endpoint: "alipay notify",
-    status: "skeleton",
-    hint: "POST form/json from Alipay; wire SDK signature verification in AlipayPaymentProvider",
+    status: "live",
+    hint: "Alipay posts form fields here after payment",
   });
 }

@@ -1,47 +1,59 @@
-# Payment providers — 支付接入说明
+# Payment — 真实支付接入说明
 
-## 模式切换
+## 模式
 
-后台 **站点配置 → 支付模式**，或环境变量 `PAYMENT_MODE`：
+| `payment_mode` | 行为 |
+|----------------|------|
+| `mock` | 立即标记已支付（演示） |
+| `alipay` | **电脑网站支付** `alipay.trade.page.pay`，RSA2 签名 + 异步通知验签 |
+| `wechat` | **Native 扫码** 统一下单 V2，MD5 签名 + 通知验签 |
 
-| 模式 | 行为 |
-|------|------|
-| `mock` | 下单立即「已支付」（默认，演示用） |
-| `alipay` | 支付宝骨架：缺密钥则下单失败；密钥齐全则订单「待支付」并返回 `payUrl` |
-| `wechat` | 微信骨架：同上 |
+在后台「站点配置」填写密钥，或写入环境变量 / Config 表。
 
-配置项：`alipay_*` / `wechat_*`（见后台表单，敏感字段脱敏）。
+## 支付宝必填
 
-## 代码结构
+| 配置键 | 说明 |
+|--------|------|
+| `alipay_app_id` | 应用 APPID |
+| `alipay_private_key` | 应用私钥（PKCS#1 或 PKCS#8 PEM，可无头尾） |
+| `alipay_public_key` | **支付宝公钥**（不是应用公钥） |
+| `alipay_notify_url` | `https://你的域名/api/payment/alipay/notify` |
+
+沙箱：可设环境变量 `ALIPAY_SANDBOX=1`，或使用沙箱 APPID（9021 开头会自动走沙箱网关）。
+
+下单后返回 `payUrl`（支付宝网关带签参数），用户浏览器打开完成支付。
+
+## 微信必填
+
+| 配置键 | 说明 |
+|--------|------|
+| `wechat_app_id` | 公众号/应用 AppID |
+| `wechat_mch_id` | 商户号 |
+| `wechat_api_key` | API 密钥（V2） |
+| `wechat_notify_url` | `https://你的域名/api/payment/wechat/notify` |
+
+可选：`WECHAT_SPBILL_IP` 为服务器出口 IP（默认 `127.0.0.1`，生产请改成真实 IP）。
+
+下单成功后 `payUrl` 指向 `/api/payment/wechat/qr`，展示 `code_url` 二维码并轮询订单状态。
+
+## 安全
+
+- 回调必须验签通过才 `markOrderPaid`
+- 密钥仅服务端 Config / 环境变量，不进前端
+- 通知 URL 必须 **HTTPS 公网**
+
+## 代码
 
 ```
 src/lib/payment/
-  types.ts      # 接口
-  mock.ts       # 模拟
-  alipay.ts     # 支付宝骨架（待接 SDK）
-  wechat.ts     # 微信骨架（待接 SDK）
-  resolve.ts    # 读配置构造 Provider
-  mark-paid.ts  # 回调标记已支付
-  index.ts
+  alipay.ts      # page.pay + RSA2 verify
+  wechat.ts      # unifiedorder + MD5 verify
+  crypto-util.ts # sign helpers
+  mark-paid.ts
 ```
 
-回调路由：
+## 常见问题
 
-- `POST /api/payment/alipay/notify`
-- `POST /api/payment/wechat/notify`
-
-开发占位页（非真实扣款）：
-
-- `/api/payment/alipay/stub-pay`
-- `/api/payment/wechat/stub-pay`
-
-## 接入真实 SDK 时
-
-1. 在 `AlipayPaymentProvider.createPayment` 调用官方下单，返回真实收银台 URL。
-2. 在 `verifyCallback` 验签，确认 `TRADE_SUCCESS` 后由 notify 路由调用 `markOrderPaidByOrderNo`。
-3. 微信同理：统一下单 + 通知验签。
-4. 保持 `payment_mode` 与密钥仅存 Config / 环境变量，勿写入前端。
-
-## 与订单超时
-
-真实支付下订单会停留在 **PENDING**，`order_timeout_minutes` 会在查询时自动取消超时未支付订单。
+1. **签名失败**：检查私钥是否为应用私钥、是否复制完整。  
+2. **通知不到**：域名、HTTPS、防火墙、支付宝/微信商户平台是否配置同一 notify URL。  
+3. **仍想演示**：支付模式改回 `mock`。
