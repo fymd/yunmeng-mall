@@ -32,6 +32,11 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [detail, setDetail] = useState<Product | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState<{
+    orderNo: string;
+    productName: string;
+    amount: number;
+  } | null>(null);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -67,14 +72,32 @@ export default function HomePage() {
     setDetailOpen(true);
   };
 
-  const handleBuy = (p: Product) => {
-    setDetailOpen(false);
-    alert(
-      "\u4e0b\u5355\u529f\u80fd\u5c06\u5728\u300c\u767b\u5f55\u4e0e\u8ba2\u5355\u300d\u9636\u6bb5\u5b8c\u6210\u3002\n\n\u5546\u54c1\uff1a" +
-        p.name +
-        "\n\u4ef7\u683c\uff1a\u00a5" +
-        Number(p.price).toFixed(2)
-    );
+  const handleBuy = async (p: Product) => {
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: p.id }),
+      });
+      const data = await res.json();
+      if (res.status === 401) {
+        setDetailOpen(false);
+        window.location.href = "/login";
+        return;
+      }
+      if (!res.ok) {
+        alert(data.error || "\u4e0b\u5355\u5931\u8d25");
+        return;
+      }
+      setDetailOpen(false);
+      setOrderSuccess({
+        orderNo: data.order.orderNo,
+        productName: data.order.productName,
+        amount: data.order.amount,
+      });
+    } catch {
+      alert("\u7f51\u7edc\u9519\u8bef\uff0c\u8bf7\u91cd\u8bd5");
+    }
   };
 
   return (
@@ -181,6 +204,41 @@ export default function HomePage() {
         onClose={() => setDetailOpen(false)}
         onBuy={handleBuy}
       />
+
+      {orderSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setOrderSuccess(null)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+            <div className="text-3xl">\u2705</div>
+            <h3 className="mt-2 text-lg font-semibold text-gray-900">\u4e0b\u5355\u6210\u529f</h3>
+            <p className="mt-1 text-sm text-gray-600">{orderSuccess.productName}</p>
+            <p className="mt-2 text-xl font-bold text-indigo-600">
+              \u00a5{Number(orderSuccess.amount).toFixed(2)}
+            </p>
+            <p className="mt-2 text-xs text-gray-400">
+              \u8ba2\u5355\u53f7\uff1a{orderSuccess.orderNo}
+            </p>
+            <p className="mt-1 text-xs text-green-600">\u6a21\u62df\u652f\u4ed8\u5df2\u5b8c\u6210</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => setOrderSuccess(null)}
+                className="flex-1 rounded-lg border border-gray-300 py-2 text-sm"
+              >
+                \u7ee7\u7eed\u8d2d\u7269
+              </button>
+              <a
+                href="/orders"
+                className="flex-1 rounded-lg bg-indigo-600 py-2 text-center text-sm text-white"
+              >
+                \u67e5\u770b\u8ba2\u5355
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
