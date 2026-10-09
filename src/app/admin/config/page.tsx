@@ -117,11 +117,9 @@ export default function AdminConfigPage() {
       for (const key of Object.keys(form) as (keyof FormState)[]) {
         const val = form[key];
         if (SENSITIVE.has(key)) {
-          // only send if user edited away from mask
           if (dirtySensitive.has(key) && val !== "********") {
             configs[key] = val;
           }
-          // skip unchanged masked secrets
           continue;
         }
         configs[key] = val;
@@ -159,7 +157,7 @@ export default function AdminConfigPage() {
         <div>
           <h1 className="text-xl font-semibold text-gray-900">站点配置</h1>
           <p className="mt-1 text-sm text-gray-500">
-            网站基础信息、公告与支付模式（无需改代码）
+            网站基础信息、公告、下单规则与支付模式
           </p>
         </div>
         <button
@@ -186,7 +184,6 @@ export default function AdminConfigPage() {
       )}
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-8">
-        {/* 网站基础 */}
         <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
           <h2 className="text-sm font-semibold text-gray-900">网站基础</h2>
           <p className="mt-0.5 text-xs text-gray-500">顶部展示名称与客服入口</p>
@@ -244,10 +241,8 @@ export default function AdminConfigPage() {
           </div>
         </section>
 
-        {/* 公告 */}
         <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
           <h2 className="text-sm font-semibold text-gray-900">公告</h2>
-          <p className="mt-0.5 text-xs text-gray-500">首页通知与弹窗（T18 将接入前台展示）</p>
           <div className="mt-4 space-y-3">
             <div>
               <label className="mb-1 block text-xs text-gray-600">公告标题</label>
@@ -285,11 +280,13 @@ export default function AdminConfigPage() {
           </div>
         </section>
 
-        {/* 系统 */}
         <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
-          <h2 className="text-sm font-semibold text-gray-900">系统设置</h2>
+          <h2 className="text-sm font-semibold text-gray-900">下单规则</h2>
+          <p className="mt-0.5 text-xs text-gray-500">
+            强制登录与待支付超时（查询/下单时自动取消超时订单）
+          </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="flex items-center gap-2 text-sm text-gray-700 sm:col-span-2">
+            <label className="flex items-start gap-2 text-sm text-gray-700 sm:col-span-2">
               <input
                 type="checkbox"
                 checked={form.force_login_to_order === "true"}
@@ -299,32 +296,39 @@ export default function AdminConfigPage() {
                     e.target.checked ? "true" : "false"
                   )
                 }
-                className="rounded border-gray-300"
+                className="mt-0.5 rounded border-gray-300"
               />
-              强制登录后才能下单
+              <span>
+                <span className="font-medium">强制登录后才能下单</span>
+                <span className="mt-0.5 block text-xs text-gray-500">
+                  关闭后允许游客下单（无账号，仅凭订单号查询）
+                </span>
+              </span>
             </label>
             <div>
               <label className="mb-1 block text-xs text-gray-600">
-                订单超时（分钟）
+                待支付超时（分钟）
               </label>
               <input
                 type="number"
-                min={1}
+                min={0}
                 value={form.order_timeout_minutes}
                 onChange={(e) =>
                   setField("order_timeout_minutes", e.target.value)
                 }
                 className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
               />
+              <p className="mt-1 text-xs text-gray-400">
+                仅对状态为「待支付」的订单生效；填 0 表示不自动取消。模拟支付通常会立即变为已支付。
+              </p>
             </div>
           </div>
         </section>
 
-        {/* 支付 */}
         <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
           <h2 className="text-sm font-semibold text-gray-900">支付配置</h2>
           <p className="mt-0.5 text-xs text-gray-500">
-            MVP 使用模拟支付；填写真实密钥后可将模式切换为支付宝/微信（需后续接入 SDK）
+            MVP 使用模拟支付；填写真实密钥后可将模式切换为支付宝/微信
           </p>
           <div className="mt-4 space-y-4">
             <div>

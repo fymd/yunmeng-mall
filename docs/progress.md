@@ -2,27 +2,25 @@
 
 ## Current Status
 
-**T23 Change password**: ✅ DONE  
-**Last Update**: 2026-10-10 04:25 JST
+**T25 force login + order timeout**: ✅ DONE  
+**Last Update**: 2026-10-10 04:35 JST
 
 ## Post-MVP
 - [x] T1–T22 MVP complete
 - [x] T24 下单备注
-- [x] **T23 修改密码**
+- [x] T23 修改密码
+- [x] **T25 强制登录 / 订单超时**
 
-### T23 Features
-- `changePassword()` in `src/lib/auth.ts` (verify current, min 6 chars, not same as old)
-- `POST /api/auth/password` — logged-in users only
-- `/account` page — profile + change password form
-- Header username → `/account`; mobile menu + admin sidebar link「修改密码」
+### T25 Features
+- `force_login_to_order`：为 true 时未登录下单返回 401；为 false 时允许游客下单（`userId` 可空）
+- `order_timeout_minutes`：仅对 PENDING 生效；查询/下单时 `expirePendingOrders` 自动取消并写备注
+- 配置页说明已更新；单元测试 `tests/order-timeout.test.ts`
+- Schema：`Order.userId` 改为可选
 
-### Usage
-1. 登录后点击顶部用户名，或访问 `/account`
-2. 输入当前密码 + 新密码（至少 6 位）并确认
-3. 管理员务必改掉默认 `admin123`
+### 本地注意
+拉取后执行一次 `npx prisma db push`（userId 可空）
 
 ## Suggested next
-- T25 强制登录 / 订单超时生效
-- T26 真实支付 Provider
+- T26 真实支付 Provider 骨架
 
 Repo: https://github.com/fymd/yunmeng-mall

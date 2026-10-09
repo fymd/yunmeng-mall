@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { generateOrderNo, isValidOrderStatus, ORDER_STATUSES } from "@/lib/order";
+import { expireOneIfNeeded, expirePendingOrders } from "@/lib/order-expire";
 import { getPaymentProvider } from "@/lib/payment";
 import { getConfig } from "@/lib/config";
 
@@ -20,18 +21,25 @@ async function requireAdmin() {
   return user;
 }
 
+function isTruthyConfig(v: string | undefined): boolean {
+  const s = (v || "").toLowerCase().trim();
+  return s === "true" || s === "1" || s === "yes";
+}
+
 /**
  * POST /api/orders
  * Body: { productId, remark? }
- * Requires login. Creates order + runs mock payment.
- * remark: user note e.g. recharge account email (max 500 chars)
+ * Login required when config force_login_to_order=true (default).
+ * Guest orders allowed when force_login_to_order=false (userId null).
  */
 export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
-    if (!user) {
+    const forceLogin = isTruthyConfig(await getConfig("force_login_to_order"));
+
+    if (forceLogin && !user) {
       return NextResponse.json(
-        { error: "请先登录", code: "UNAUTHORIZED" },
+        { error: "请先登录后再下单", code: "UNAUTHORIZED" },
         { status: 401 }
       );
     }
@@ -54,13 +62,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "商品已售罄" }, { status: 400 });
     }
 
+    // Opportunistic cleanup of stale pending orders
+    await expirePendingOrders().catch(() => 0);
+
     const orderNo = generateOrderNo();
     const amount = product.price;
 
     const order = await prisma.order.create({
       data: {
         orderNo,
-        userId: user.id,
+        userId: user?.id ?? null,
         productId: product.id,
         amount,
         status: "PENDING",
@@ -77,7 +88,7 @@ export async function POST(req: NextRequest) {
       orderNo,
       amount,
       subject: product.name,
-      userId: user.id,
+      userId: user?.id,
     });
 
     let finalStatus = order.status;
@@ -121,12 +132,12 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/orders
- * - orderNo: public query by order number
- * - all=1 (admin): list all orders with optional status / q filters
- * - logged in (non-admin): list my orders
+ * Runs expirePendingOrders before returning lists / single order.
  */
 export async function GET(req: NextRequest) {
   try {
+    await expirePendingOrders().catch(() => 0);
+
     const orderNo = req.nextUrl.searchParams.get("orderNo")?.trim();
     const all = req.nextUrl.searchParams.get("all") === "1";
     const statusFilter = req.nextUrl.searchParams.get("status")?.trim();
@@ -139,7 +150,7 @@ export async function GET(req: NextRequest) {
     const user = await getSessionUser();
 
     if (orderNo) {
-      const order = await prisma.order.findUnique({
+      let order = await prisma.order.findUnique({
         where: { orderNo },
         include: {
           product: { select: { name: true, tags: true } },
@@ -149,6 +160,7 @@ export async function GET(req: NextRequest) {
       if (!order) {
         return NextResponse.json({ error: "订单不存在" }, { status: 404 });
       }
+      order = await expireOneIfNeeded(order);
       return NextResponse.json({
         order: {
           orderNo: order.orderNo,
@@ -214,7 +226,7 @@ export async function GET(req: NextRequest) {
           productId: o.productId,
           productName: o.product.name,
           userId: o.userId,
-          username: o.user.username,
+          username: o.user?.username ?? "游客",
           createdAt: o.createdAt,
           paidAt: o.paidAt,
           updatedAt: o.updatedAt,
@@ -263,12 +275,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/**
- * PATCH /api/orders
- * Admin only. Body: { id, status?, remark? }
- * Update order status and/or remark. Sets paidAt when moving to PAID.
- * Admin remark update can append delivery info; prefer not to erase user remark blindly.
- */
 export async function PATCH(req: NextRequest) {
   try {
     const admin = await requireAdmin();
@@ -334,7 +340,7 @@ export async function PATCH(req: NextRequest) {
         status: order.status,
         remark: order.remark,
         productName: order.product.name,
-        username: order.user.username,
+        username: order.user?.username ?? "游客",
         createdAt: order.createdAt,
         paidAt: order.paidAt,
         updatedAt: order.updatedAt,

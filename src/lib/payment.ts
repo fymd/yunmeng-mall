@@ -8,7 +8,7 @@ export interface CreatePaymentInput {
   orderNo: string;
   amount: number;
   subject: string;
-  userId: string;
+  userId?: string;
 }
 
 export interface PaymentResult {

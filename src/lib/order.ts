@@ -54,3 +54,36 @@ export function generateOrderNo(now: Date = new Date()): string {
 export function isOrderNoFormat(orderNo: string): boolean {
   return /^YM\d{14}\d{4}$/.test(orderNo);
 }
+
+/**
+ * Parse order_timeout_minutes config.
+ * Returns minutes; 0 or invalid → timeout disabled.
+ */
+export function parseOrderTimeoutMinutes(raw: string | undefined | null): number {
+  if (raw === undefined || raw === null || raw === "") return 0;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(Math.floor(n), 60 * 24 * 7); // max 7 days
+}
+
+/** Whether a PENDING order created at `createdAt` has exceeded timeout. */
+export function isPendingOrderExpired(
+  createdAt: Date,
+  timeoutMinutes: number,
+  now: Date = new Date()
+): boolean {
+  if (timeoutMinutes <= 0) return false;
+  const deadline = createdAt.getTime() + timeoutMinutes * 60 * 1000;
+  return now.getTime() >= deadline;
+}
+
+export function timeoutCancelRemark(
+  existingRemark: string,
+  timeoutMinutes: number
+): string {
+  const note = `[系统] 超过 ${timeoutMinutes} 分钟未支付，已自动取消`;
+  const base = (existingRemark || "").trim();
+  if (!base) return note;
+  if (base.includes("[系统] 超过")) return base;
+  return `${base}\n${note}`;
+}
