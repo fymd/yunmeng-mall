@@ -5,8 +5,8 @@
 ## Current Status
 
 **Phase**: sdlc-build (Implementation)  
-**Current Task**: T1 — Project initialization (Next.js + TypeScript + Tailwind)  
-**Last Update**: 2026-10-09
+**Current Task**: T1 — Project initialization (almost done) + starting T2  
+**Last Update**: 2026-10-09 15:20 HKT
 
 ## Milestone Overview
 
@@ -21,11 +21,12 @@
 ## Task Status
 
 ### Milestone 1 — Foundation
-- [ ] **T1** Project init (Next.js + TS + Tailwind + Prisma) — *in progress*
-- [ ] **T2** Schema + seed data
+- [x] **T1** Project init (Next.js + TS + Tailwind) — scaffold done
+- [~] **T1b** Prisma schema + payment abstraction + config service + Docker skeleton — **just pushed**
+- [ ] **T2** Schema migrate + seed data (admin + sample products)
 - [ ] **T3** Basic responsive layout
-- [ ] **T4** Config service + Payment Provider (Mock)
-- [ ] **T5** Docker Compose skeleton
+- [ ] **T4** Config service + Payment Provider fully wired
+- [ ] **T5** Docker Compose verified
 
 ### Milestone 2 — Catalog
 - [ ] T6 Category API + sidebar
@@ -52,10 +53,8 @@
 - [ ] T21 README + CI
 - [ ] T22 Final review
 
-## How to Follow Progress
+## How to Follow
 
-1. **Watch this file**: `docs/progress.md` (updated frequently)
-2. **GitHub Commits**: https://github.com/fymd/yunmeng-mall/commits/main
-3. **GitHub Repo**: https://github.com/fymd/yunmeng-mall
-
-I will push code and update this progress file after each completed task or meaningful step.
+1. This file: https://github.com/fymd/yunmeng-mall/blob/main/docs/progress.md
+2. Commits: https://github.com/fymd/yunmeng-mall/commits/main
+3. Repo: https://github.com/fymd/yunmeng-mall

@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://yunmeng:yunmeng@db:5432/yunmeng?schema=public
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me-in-production}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - PAYMENT_MODE=${PAYMENT_MODE:-mock}
+    depends_on:
+      - db
+    volumes:
+      - uploads:/app/public/uploads
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: yunmeng
+      POSTGRES_PASSWORD: yunmeng
+      POSTGRES_DB: yunmeng
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:

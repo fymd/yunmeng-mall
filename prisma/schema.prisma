@@ -1,0 +1,92 @@
+// Prisma schema for Yunmeng AI Top-up Mall
+// Dev: SQLite | Prod: PostgreSQL (via DATABASE_URL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum StockStatus {
+  PLENTY      // 非常多
+  SUFFICIENT  // 充足
+  LOW         // 即将售罄
+  PREORDER    // 可预订
+  SOLD_OUT    // 售罄
+}
+
+enum OrderStatus {
+  PENDING     // 待支付
+  PAID        // 已支付
+  DELIVERED   // 已发货
+  COMPLETED   // 已完成
+  CANCELLED   // 已取消
+  REFUNDED    // 已退款
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String?  @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  sort      Int       @default(0)
+  enabled   Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  name        String
+  description String      @default("")
+  price       Float
+  stockStatus StockStatus @default(PLENTY)
+  tags        String      @default("") // comma-separated
+  enabled     Boolean     @default(true)
+  imageUrl    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orders      Order[]
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  orderNo   String      @unique
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  productId String
+  product   Product     @relation(fields: [productId], references: [id])
+  amount    Float
+  status    OrderStatus @default(PENDING)
+  remark    String      @default("")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  paidAt    DateTime?
+}
+
+model Config {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
