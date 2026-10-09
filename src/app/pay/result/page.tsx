@@ -12,6 +12,7 @@ interface OrderView {
   createdAt: string;
   paidAt?: string | null;
   remark?: string;
+  deliveryContent?: string;
 }
 
 interface CsConfig {
@@ -49,8 +50,8 @@ const STATUS_UI: Record<
     headerBg: "from-amber-400 to-orange-500",
   },
   DELIVERED: {
-    title: "已发货",
-    desc: "商品已发货，请注意查收或查看订单备注中的发货信息。",
+    title: "已自动发货",
+    desc: "卡密已发放，请妥善保存下方内容。",
     icon: "📦",
     ring: "bg-white text-blue-600 shadow-md",
     badge: "text-blue-700 bg-blue-50",
@@ -161,6 +162,7 @@ function ResultContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [copiedCard, setCopiedCard] = useState(false);
   const [pollCount, setPollCount] = useState(0);
 
   useEffect(() => {
@@ -220,6 +222,17 @@ function ResultContent() {
     }
   };
 
+  const copyCard = async () => {
+    if (!order?.deliveryContent) return;
+    try {
+      await navigator.clipboard.writeText(order.deliveryContent);
+      setCopiedCard(true);
+      setTimeout(() => setCopiedCard(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
   const ui = useMemo(() => {
     if (order && STATUS_UI[order.status]) return STATUS_UI[order.status];
     return {
@@ -239,9 +252,7 @@ function ResultContent() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-8 sm:px-6 sm:py-12">
-      {/* Receipt card */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg print:shadow-none">
-        {/* Colored header */}
         <div
           className={`bg-gradient-to-br ${ui.headerBg} px-6 pb-10 pt-8 text-center text-white`}
         >
@@ -260,14 +271,16 @@ function ResultContent() {
           {order?.status === "PENDING" && pollCount < 40 && (
             <p className="mt-2 text-xs text-white/80">正在自动刷新状态…</p>
           )}
-          {order && (order.status === "PAID" || order.status === "COMPLETED") && (
-            <p className="mt-4 text-3xl font-bold tracking-tight">
-              ¥{Number(order.amount).toFixed(2)}
-            </p>
-          )}
+          {order &&
+            (order.status === "PAID" ||
+              order.status === "COMPLETED" ||
+              order.status === "DELIVERED") && (
+              <p className="mt-4 text-3xl font-bold tracking-tight">
+                ¥{Number(order.amount).toFixed(2)}
+              </p>
+            )}
         </div>
 
-        {/* Pull-up body */}
         <div className="relative -mt-4 rounded-t-2xl bg-white px-5 pb-6 pt-5 sm:px-6">
           {error && !order && (
             <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-center text-sm text-red-600">
@@ -279,19 +292,44 @@ function ResultContent() {
             <>
               <Timeline status={order.status} />
 
+              {order.deliveryContent && (
+                <div className="mt-5 rounded-xl border-2 border-indigo-200 bg-indigo-50/80 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-indigo-800">
+                      发货内容（卡密）
+                    </p>
+                    <button
+                      type="button"
+                      onClick={copyCard}
+                      className="text-xs font-medium text-indigo-600 hover:underline print:hidden"
+                    >
+                      {copiedCard ? "已复制" : "复制卡密"}
+                    </button>
+                  </div>
+                  <p className="mt-2 break-all font-mono text-sm font-semibold text-gray-900">
+                    {order.deliveryContent}
+                  </p>
+                  <p className="mt-2 text-[10px] text-indigo-600/80">
+                    请立即保存，离开页面后仍可在订单查询中查看
+                  </p>
+                </div>
+              )}
+
               <div className="mt-5 divide-y divide-gray-100 rounded-xl border border-gray-100 text-sm">
                 <Row label="商品">
                   <span className="font-medium text-gray-900">
                     {order.productName}
                   </span>
                 </Row>
-                {order.status !== "PAID" && order.status !== "COMPLETED" && (
-                  <Row label="金额">
-                    <span className="text-base font-bold text-indigo-600">
-                      ¥{Number(order.amount).toFixed(2)}
-                    </span>
-                  </Row>
-                )}
+                {order.status !== "PAID" &&
+                  order.status !== "COMPLETED" &&
+                  order.status !== "DELIVERED" && (
+                    <Row label="金额">
+                      <span className="text-base font-bold text-indigo-600">
+                        ¥{Number(order.amount).toFixed(2)}
+                      </span>
+                    </Row>
+                  )}
                 <Row label="状态">
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs ${ui.badge}`}
@@ -415,7 +453,7 @@ function ResultContent() {
           帮助中心
         </Link>
         {" · "}
-        请妥善保存订单号
+        请妥善保存订单号与卡密
       </p>
     </div>
   );
