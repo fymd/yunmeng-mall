@@ -2,32 +2,21 @@
 
 ## Current Status
 
-**T20 One-click scripts**: ✅ DONE  
-**Last Update**: 2026-10-10 04:05 JST
+**T21 README + CI**: ✅ DONE  
+**Last Update**: 2026-10-10 04:10 JST
 
 ## Milestone 5 — Polish, Scripts & Ship
 - [x] T18 Announcement from config
 - [x] T19 Core tests + error handling
-- [x] **T20 One-click scripts**
-- [ ] T21 README + CI
+- [x] T20 One-click scripts
+- [x] **T21 README + CI**
 - [ ] T22 Final review
 
-### T20 Features
-- `scripts/common.sh` — compose helpers, health wait, volume names
-- `scripts/backup.sh` — pg_dump + uploads tar + meta → timestamped `.tar.gz`
-- `scripts/restore.sh` — restore DB (recreate) + uploads; `YES=1` / `SKIP_UPLOADS=1`
-- `scripts/deploy.sh` — git pull, compose up --build, health retry
-- `docker-compose.yml` — healthcheck, ports via env, optional RUN_SEED
-- `docs/ops.md` — operator guide
+### T21 Features
+- Full README: local dev, Docker deploy, backup/restore, structure, CI
+- `.github/workflows/ci.yml`: test + lint + build on push/PR to main
+- `.gitignore` hardened (env, sqlite, backups, next)
 
-### Usage
-```bash
-chmod +x scripts/*.sh
-./scripts/deploy.sh
-./scripts/backup.sh
-YES=1 ./scripts/restore.sh ./backups/yunmeng_backup_*.tar.gz
-```
-
-## Next: T21 README (run, Docker deploy, backup/migrate) + CI workflow
+## Next: T22 Final review, seed polish, responsive check
 
 Repo: https://github.com/fymd/yunmeng-mall
