@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useLocale } from "@/lib/i18n";
 
 interface User {
   id: string;
@@ -13,6 +14,7 @@ interface User {
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  const { t, toggle } = useLocale();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [siteName, setSiteName] = useState("云梦AI代充");
@@ -86,20 +88,28 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-1 sm:flex">
-          {navLink("/", "购物")}
-          {navLink("/orders", "订单查询")}
-          {navLink("/help", "帮助中心")}
+          {navLink("/", t("shop"))}
+          {navLink("/orders", t("orders"))}
+          {navLink("/help", t("help"))}
           {user?.role === "ADMIN" && (
             <Link
               href="/admin"
               className="rounded-md px-3 py-1.5 text-sm text-indigo-600 hover:bg-indigo-50"
             >
-              管理后台
+              {t("admin")}
             </Link>
           )}
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-2">
+          <button
+            type="button"
+            onClick={toggle}
+            className="rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100"
+            title="Language"
+          >
+            {t("lang")}
+          </button>
           {loading ? (
             <span className="text-xs text-gray-400">...</span>
           ) : user ? (
@@ -107,7 +117,7 @@ export default function Header() {
               <Link
                 href="/account"
                 className="hidden max-w-[8rem] truncate text-sm text-gray-600 hover:text-indigo-600 sm:inline"
-                title="账号设置"
+                title={t("account")}
               >
                 {user.username}
               </Link>
@@ -115,7 +125,7 @@ export default function Header() {
                 onClick={handleLogout}
                 className="rounded-md px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 sm:px-3"
               >
-                退出
+                {t("logout")}
               </button>
             </>
           ) : (
@@ -124,13 +134,13 @@ export default function Header() {
                 href="/login"
                 className="rounded-md px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 sm:px-3"
               >
-                登录
+                {t("login")}
               </Link>
               <Link
                 href="/register"
                 className="hidden rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 sm:inline-block"
               >
-                创建账号
+                {t("register")}
               </Link>
             </>
           )}
@@ -158,17 +168,17 @@ export default function Header() {
       {menuOpen && (
         <div className="border-t border-gray-100 bg-white px-4 py-3 sm:hidden">
           <nav className="flex flex-col gap-1">
-            {navLink("/", "购物", "block")}
-            {navLink("/orders", "订单查询", "block")}
-            {navLink("/help", "帮助中心", "block")}
-            {user && navLink("/account", "账号设置", "block")}
-            {!user && navLink("/register", "创建账号", "block")}
+            {navLink("/", t("shop"), "block")}
+            {navLink("/orders", t("orders"), "block")}
+            {navLink("/help", t("help"), "block")}
+            {user && navLink("/account", t("account"), "block")}
+            {!user && navLink("/register", t("register"), "block")}
             {user?.role === "ADMIN" && (
               <Link
                 href="/admin"
                 className="rounded-md px-3 py-2 text-sm text-indigo-600 hover:bg-indigo-50"
               >
-                管理后台
+                {t("admin")}
               </Link>
             )}
           </nav>

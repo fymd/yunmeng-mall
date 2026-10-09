@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Announcement from "@/components/layout/Announcement";
 import CustomerServiceFloat from "@/components/layout/CustomerServiceFloat";
+import { LocaleProvider } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,13 +32,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-gray-50 antialiased`}
       >
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <Announcement />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <CustomerServiceFloat />
-        </div>
+        <LocaleProvider>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <Announcement />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <CustomerServiceFloat />
+          </div>
+        </LocaleProvider>
       </body>
     </html>
   );

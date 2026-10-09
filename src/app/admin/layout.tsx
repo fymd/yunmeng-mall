@@ -16,6 +16,7 @@ const NAV = [
   { href: "/admin/products", label: "商品管理" },
   { href: "/admin/cards", label: "卡密发货" },
   { href: "/admin/orders", label: "订单管理" },
+  { href: "/admin/messages", label: "客服留言" },
   { href: "/admin/config", label: "站点配置" },
   { href: "/account", label: "修改密码" },
 ];
@@ -64,13 +65,7 @@ export default function AdminLayout({
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
         <p className="text-lg font-medium text-gray-900">无访问权限</p>
-        <p className="mt-2 text-sm text-gray-500">
-          当前账号不是管理员，无法进入后台。
-        </p>
-        <Link
-          href="/"
-          className="mt-4 inline-block text-sm text-indigo-600 hover:underline"
-        >
+        <Link href="/" className="mt-4 inline-block text-sm text-indigo-600">
           返回商城
         </Link>
       </div>
@@ -113,7 +108,6 @@ export default function AdminLayout({
           </Link>
         </div>
       </aside>
-
       <div className="flex-1 p-4 sm:p-6">{children}</div>
     </div>
   );
