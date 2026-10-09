@@ -37,6 +37,7 @@ export default function HomePage() {
     orderNo: string;
     productName: string;
     amount: number;
+    remark?: string;
   } | null>(null);
 
   const loadProducts = useCallback(async () => {
@@ -73,14 +74,14 @@ export default function HomePage() {
     setDetailOpen(true);
   };
 
-  const handleBuy = async (p: Product) => {
+  const handleBuy = async (p: Product, remark: string) => {
     if (buying) return;
     setBuying(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: p.id }),
+        body: JSON.stringify({ productId: p.id, remark }),
       });
       const data = await res.json();
       if (res.status === 401) {
@@ -97,6 +98,7 @@ export default function HomePage() {
         orderNo: data.order.orderNo,
         productName: data.order.productName,
         amount: data.order.amount,
+        remark: data.order.remark || remark || undefined,
       });
     } catch {
       alert("网络错误，请重试");
@@ -208,8 +210,9 @@ export default function HomePage() {
       <ProductDetailModal
         product={detail}
         open={detailOpen}
-        onClose={() => setDetailOpen(false)}
+        onClose={() => !buying && setDetailOpen(false)}
         onBuy={handleBuy}
+        buying={buying}
       />
 
       {orderSuccess && (
@@ -228,6 +231,11 @@ export default function HomePage() {
             <p className="mt-2 break-all text-xs text-gray-400">
               订单号：{orderSuccess.orderNo}
             </p>
+            {orderSuccess.remark && (
+              <p className="mt-2 rounded-lg bg-gray-50 px-2 py-1.5 text-left text-xs text-gray-600">
+                备注：{orderSuccess.remark}
+              </p>
+            )}
             <p className="mt-1 text-xs text-green-600">模拟支付已完成</p>
             <div className="mt-4 flex gap-2">
               <button

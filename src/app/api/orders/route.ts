@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
-import { generateOrderNo } from "@/lib/order";
+import { generateOrderNo, isValidOrderStatus, ORDER_STATUSES } from "@/lib/order";
 import { getPaymentProvider } from "@/lib/payment";
 import { getConfig } from "@/lib/config";
 
-const VALID_STATUSES = [
-  "PENDING",
-  "PAID",
-  "DELIVERED",
-  "COMPLETED",
-  "CANCELLED",
-  "REFUNDED",
-] as const;
+type OrderStatusType = (typeof ORDER_STATUSES)[number];
 
-type OrderStatusType = (typeof VALID_STATUSES)[number];
+const MAX_REMARK_LEN = 500;
+
+function sanitizeRemark(raw: unknown): string {
+  if (raw === undefined || raw === null) return "";
+  return String(raw).trim().slice(0, MAX_REMARK_LEN);
+}
 
 async function requireAdmin() {
   const user = await getSessionUser();
@@ -24,8 +22,9 @@ async function requireAdmin() {
 
 /**
  * POST /api/orders
- * Body: { productId }
+ * Body: { productId, remark? }
  * Requires login. Creates order + runs mock payment.
+ * remark: user note e.g. recharge account email (max 500 chars)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -38,10 +37,12 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { productId } = body as { productId?: string };
+    const { productId } = body as { productId?: string; remark?: string };
     if (!productId) {
       return NextResponse.json({ error: "缺少 productId" }, { status: 400 });
     }
+
+    const remark = sanitizeRemark(body.remark);
 
     const product = await prisma.product.findFirst({
       where: { id: productId, enabled: true },
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
         productId: product.id,
         amount,
         status: "PENDING",
+        remark,
       },
       include: {
         product: { select: { name: true } },
@@ -98,6 +100,7 @@ export async function POST(req: NextRequest) {
         amount: order.amount,
         status: finalStatus,
         productName: order.product.name,
+        remark: order.remark,
         paidAt,
         payment: {
           provider: provider.name,
@@ -175,11 +178,8 @@ export async function GET(req: NextRequest) {
         >;
       } = {};
 
-      if (
-        statusFilter &&
-        VALID_STATUSES.includes(statusFilter as OrderStatusType)
-      ) {
-        where.status = statusFilter as OrderStatusType;
+      if (statusFilter && isValidOrderStatus(statusFilter)) {
+        where.status = statusFilter;
       }
       if (q) {
         where.OR = [
@@ -251,6 +251,7 @@ export async function GET(req: NextRequest) {
         productName: o.product.name,
         createdAt: o.createdAt,
         paidAt: o.paidAt,
+        remark: o.remark,
       })),
     });
   } catch (e) {
@@ -266,6 +267,7 @@ export async function GET(req: NextRequest) {
  * PATCH /api/orders
  * Admin only. Body: { id, status?, remark? }
  * Update order status and/or remark. Sets paidAt when moving to PAID.
+ * Admin remark update can append delivery info; prefer not to erase user remark blindly.
  */
 export async function PATCH(req: NextRequest) {
   try {
@@ -293,24 +295,21 @@ export async function PATCH(req: NextRequest) {
 
     if (body.status !== undefined) {
       const status = String(body.status);
-      if (!VALID_STATUSES.includes(status as OrderStatusType)) {
+      if (!isValidOrderStatus(status)) {
         return NextResponse.json(
           { error: "无效的订单状态: " + status },
           { status: 400 }
         );
       }
-      data.status = status as OrderStatusType;
+      data.status = status;
 
       if (status === "PAID" && !existing.paidAt) {
         data.paidAt = new Date();
       }
-      if (status === "PENDING" || status === "CANCELLED") {
-        // keep paidAt as-is; do not clear for audit
-      }
     }
 
     if (body.remark !== undefined) {
-      data.remark = String(body.remark);
+      data.remark = sanitizeRemark(body.remark);
     }
 
     if (Object.keys(data).length === 0) {
