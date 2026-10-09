@@ -2,24 +2,28 @@
 
 ## Current Status
 
-**T16 Order management**: ✅ DONE  
-**Last Update**: 2026-10-10 03:40 JST
+**T17 Site + Payment config**: ✅ DONE  
+**Last Update**: 2026-10-10 03:50 JST
 
 ## Milestone 4 — Admin
 - [x] T13 Admin layout
 - [x] T14 Category CRUD
 - [x] T15 Product CRUD + publish
-- [x] **T16 Order management**
-- [ ] T17 Site config
+- [x] T16 Order management
+- [x] **T17 Site config**
 
-### T16 Features
-- GET /api/orders?all=1 — admin list with status / keyword filter + pagination
-- PATCH /api/orders — admin update status & remark (sets paidAt when → PAID)
-- Admin UI: order table, status dropdown, quick 发货/完成, remark editor, search
+### T17 Features
+- GET /api/config — public keys only
+- GET /api/config?all=1 — full config (admin)
+- POST /api/config — admin batch/single update; sensitive keys masked; skip unchanged ********
+- Admin UI: site name/logo, customer service, announcement, system flags, payment mode + Alipay/WeChat credential fields
+- Header reads site_name from public config
 
 ### Access
-/admin/orders (login as admin)
+/admin/config (login as admin)
 
-## Next: T17 Site + Payment config UI
+## Milestone 4 complete
+
+## Next: Milestone 5 — T18 Announcement from config (frontend banner/modal)
 
 Repo: https://github.com/fymd/yunmeng-mall
