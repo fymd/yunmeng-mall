@@ -2,19 +2,15 @@
 
 ## Current Status
 
-**Batch features (i18n / upload / chat / mail / charts / proxy)**: ✅ DONE  
-**Last Update**: 2026-10-10 05:40 JST
+**IM customer service (SSE real-time)**: ✅ DONE  
+**Last Update**: 2026-10-10 06:05 JST
 
-### New
-- 中英切换 `LocaleProvider`（Header）
-- 商品图上传 `POST /api/upload` → `/uploads/...`
-- 站内客服留言 `ChatMessage` + 悬浮窗 + 后台消息
-- SMTP 通知配置键 + `notifyOrderEvent`（需配置才发送）
-- 后台概览图表 `/api/stats`
-- `docs/deploy-proxy.md` Nginx/Caddy 示例
+### IM Features
+- `GET /api/chat/stream` SSE（访客 session / 管理员 inbox）
+- 进程内 `chat-bus` 发布订阅；断线自动降级轮询
+- 前台气泡会话 + 未读角标 + 连接状态
+- 后台 IM 会话列表实时刷新、打开会话标已读
 
-```bash
-npx prisma db push
-```
+Note: 单机部署实时推送有效；多副本需后续接 Redis Pub/Sub。
 
 Repo: https://github.com/fymd/yunmeng-mall
