@@ -2,28 +2,20 @@
 
 ## Current Status
 
-**Phase**: sdlc-build  
-**T9 Auth**: ✅ **DONE**  
-**Last Update**: 2026-10-09 18:45 CST
+**T10 Create order + Mock payment**: ✅ DONE  
+**Last Update**: 2026-10-09 18:50 CST
 
-## Milestone Overview
+## Milestone 3 — Auth & Order
+- [x] T9 Register / Login
+- [x] **T10 Create order + Mock payment**
+- [ ] T11 Order query (partially done in T10 /orders page)
+- [ ] T12 Order status pages polish
 
-| Milestone | Status |
-|-----------|--------|
-| 1. Foundation | ✅ |
-| 2. Catalog | ✅ |
-| 3. Auth & Order | 🔄 T9 done → T10 next |
-| 4. Admin | ⏳ |
-| 5. Ship | ⏳ |
-
-## T9 Deliverables
-- `POST /api/auth/register` / `login` / `logout`
-- `GET /api/auth/me`
-- Pages: `/login` `/register`
-- Header shows username + logout when logged in
-- Cookie session (httpOnly, 7 days)
-- Seed accounts: `admin/admin123`, `demo/user123`
-
-## Next: T10 Create order + Mock payment
+### T10 Flow
+1. Login required
+2. Click buy on product → POST /api/orders
+3. Mock payment auto-succeeds → status PAID
+4. Success modal with orderNo
+5. /orders page: query by orderNo + my orders list
 
 Repo: https://github.com/fymd/yunmeng-mall
