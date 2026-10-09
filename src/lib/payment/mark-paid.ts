@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { tryAutoDeliver } from "@/lib/deliver";
 
 /**
- * Mark order PAID if currently PENDING. Idempotent for already-paid orders.
+ * Mark order PAID if currently PENDING. Then try auto card delivery.
+ * Idempotent for already-paid / delivered orders.
  */
 export async function markOrderPaidByOrderNo(
   orderNo: string,
   opts?: { paymentId?: string; appendRemark?: string }
-): Promise<{ ok: boolean; status: string; reason?: string }> {
+): Promise<{ ok: boolean; status: string; reason?: string; delivered?: boolean }> {
   if (!orderNo) {
     return { ok: false, status: "", reason: "missing orderNo" };
   }
@@ -16,8 +18,18 @@ export async function markOrderPaidByOrderNo(
     return { ok: false, status: "", reason: "order not found" };
   }
 
-  if (order.status === "PAID" || order.status === "DELIVERED" || order.status === "COMPLETED") {
-    return { ok: true, status: order.status, reason: "already paid-ish" };
+  if (order.status === "DELIVERED" || order.status === "COMPLETED") {
+    return { ok: true, status: order.status, reason: "already delivered-ish", delivered: true };
+  }
+
+  if (order.status === "PAID") {
+    const d = await tryAutoDeliver(order.id);
+    return {
+      ok: true,
+      status: d.ok && d.delivered ? "DELIVERED" : "PAID",
+      delivered: d.ok && "delivered" in d ? d.delivered : false,
+      reason: "already paid",
+    };
   }
 
   if (order.status !== "PENDING") {
@@ -26,9 +38,7 @@ export async function markOrderPaidByOrderNo(
 
   let remark = order.remark || "";
   if (opts?.appendRemark) {
-    remark = remark
-      ? `${remark}\n${opts.appendRemark}`
-      : opts.appendRemark;
+    remark = remark ? `${remark}\n${opts.appendRemark}` : opts.appendRemark;
   }
   if (opts?.paymentId) {
     const tag = `[支付单号] ${opts.paymentId}`;
@@ -46,5 +56,13 @@ export async function markOrderPaidByOrderNo(
     },
   });
 
-  return { ok: true, status: "PAID" };
+  const d = await tryAutoDeliver(order.id);
+  const finalStatus =
+    d.ok && "delivered" in d && d.delivered ? "DELIVERED" : "PAID";
+
+  return {
+    ok: true,
+    status: finalStatus,
+    delivered: d.ok && "delivered" in d ? d.delivered : false,
+  };
 }

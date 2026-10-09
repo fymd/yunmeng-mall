@@ -34,6 +34,12 @@ enum OrderStatus {
   REFUNDED
 }
 
+enum CardStatus {
+  UNUSED
+  SOLD
+  VOID
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
@@ -66,24 +72,44 @@ model Product {
   tags        String      @default("")
   enabled     Boolean     @default(true)
   imageUrl    String?
+  /// When true, assign one CardCode on payment and set order DELIVERED
+  autoDeliver Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   orders      Order[]
+  cards       CardCode[]
 }
 
 model Order {
-  id        String      @id @default(cuid())
-  orderNo   String      @unique
-  userId    String?
-  user      User?       @relation(fields: [userId], references: [id])
+  id              String      @id @default(cuid())
+  orderNo         String      @unique
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id])
+  productId       String
+  product         Product     @relation(fields: [productId], references: [id])
+  amount          Float
+  status          OrderStatus @default(PENDING)
+  remark          String      @default("")
+  /// Snapshot of delivered card/secret for buyer display
+  deliveryContent String      @default("")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  paidAt          DateTime?
+  card            CardCode?
+}
+
+model CardCode {
+  id        String     @id @default(cuid())
   productId String
-  product   Product     @relation(fields: [productId], references: [id])
-  amount    Float
-  status    OrderStatus @default(PENDING)
-  remark    String      @default("")
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  paidAt    DateTime?
+  product   Product    @relation(fields: [productId], references: [id])
+  code      String
+  status    CardStatus @default(UNUSED)
+  orderId   String?    @unique
+  order     Order?     @relation(fields: [orderId], references: [id])
+  soldAt    DateTime?
+  createdAt DateTime   @default(now())
+
+  @@index([productId, status])
 }
 
 model Config {
