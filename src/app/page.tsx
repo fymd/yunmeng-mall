@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
+import ProductDetailModal from "@/components/product/ProductDetailModal";
 
 interface Product {
   id: string;
@@ -29,6 +30,8 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [detail, setDetail] = useState<Product | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -53,8 +56,25 @@ export default function HomePage() {
     loadProducts();
   }, [loadProducts]);
 
-  const handleSearch = () => {
-    setQuery(search.trim());
+  const openDetail = async (p: Product) => {
+    try {
+      const res = await fetch("/api/products/" + p.id);
+      const data = await res.json();
+      setDetail(data.product || p);
+    } catch {
+      setDetail(p);
+    }
+    setDetailOpen(true);
+  };
+
+  const handleBuy = (p: Product) => {
+    setDetailOpen(false);
+    alert(
+      "\u4e0b\u5355\u529f\u80fd\u5c06\u5728\u300c\u767b\u5f55\u4e0e\u8ba2\u5355\u300d\u9636\u6bb5\u5b8c\u6210\u3002\n\n\u5546\u54c1\uff1a" +
+        p.name +
+        "\n\u4ef7\u683c\uff1a\u00a5" +
+        Number(p.price).toFixed(2)
+    );
   };
 
   return (
@@ -68,11 +88,11 @@ export default function HomePage() {
             placeholder="\u641c\u7d22\u5546\u54c1\u5173\u952e\u8bcd"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            onKeyDown={(e) => e.key === "Enter" && setQuery(search.trim())}
             className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
           />
           <button
-            onClick={handleSearch}
+            onClick={() => setQuery(search.trim())}
             className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           >
             \u641c\u7d22
@@ -88,21 +108,15 @@ export default function HomePage() {
           </div>
 
           {loading && (
-            <div className="px-4 py-12 text-center text-sm text-gray-400">
-              \u52a0\u8f7d\u4e2d...
-            </div>
+            <div className="px-4 py-12 text-center text-sm text-gray-400">\u52a0\u8f7d\u4e2d...</div>
           )}
 
           {!loading && error && (
-            <div className="px-4 py-8 text-center text-sm text-amber-600">
-              {error}
-            </div>
+            <div className="px-4 py-8 text-center text-sm text-amber-600">{error}</div>
           )}
 
           {!loading && !error && products.length === 0 && (
-            <div className="px-4 py-12 text-center text-sm text-gray-400">
-              \u6682\u65e0\u5339\u914d\u5546\u54c1
-            </div>
+            <div className="px-4 py-12 text-center text-sm text-gray-400">\u6682\u65e0\u5339\u914d\u5546\u54c1</div>
           )}
 
           {!loading &&
@@ -120,8 +134,11 @@ export default function HomePage() {
                   key={p.id}
                   className="grid grid-cols-12 items-center gap-2 border-b border-gray-50 px-4 py-3 last:border-0 hover:bg-gray-50/50"
                 >
-                  <div className="col-span-6 sm:col-span-7">
-                    <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                  <div
+                    className="col-span-6 cursor-pointer sm:col-span-7"
+                    onClick={() => openDetail(p)}
+                  >
+                    <p className="text-sm font-medium text-gray-900 line-clamp-2 hover:text-indigo-600">
                       {p.name}
                     </p>
                     <div className="mt-1 flex flex-wrap gap-1">
@@ -139,14 +156,13 @@ export default function HomePage() {
                     \u00a5{Number(p.price).toFixed(2)}
                   </div>
                   <div className="col-span-2 hidden text-center sm:block">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs ${stock.color}`}
-                    >
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${stock.color}`}>
                       {stock.text}
                     </span>
                   </div>
                   <div className="col-span-2 text-center sm:col-span-1">
                     <button
+                      onClick={() => openDetail(p)}
                       className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                       disabled={p.stockStatus === "SOLD_OUT"}
                     >
@@ -158,6 +174,13 @@ export default function HomePage() {
             })}
         </div>
       </div>
+
+      <ProductDetailModal
+        product={detail}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        onBuy={handleBuy}
+      />
     </div>
   );
 }
