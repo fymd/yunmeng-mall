@@ -16,11 +16,11 @@ interface Product {
 }
 
 const STOCK_LABEL: Record<string, { text: string; color: string }> = {
-  PLENTY: { text: "\u975e\u5e38\u591a", color: "text-green-600 bg-green-50" },
-  SUFFICIENT: { text: "\u5145\u8db3", color: "text-emerald-600 bg-emerald-50" },
-  LOW: { text: "\u5373\u5c06\u552e\u7f44", color: "text-orange-600 bg-orange-50" },
-  PREORDER: { text: "\u53ef\u9884\u8ba2", color: "text-blue-600 bg-blue-50" },
-  SOLD_OUT: { text: "\u552e\u7f44", color: "text-gray-500 bg-gray-100" },
+  PLENTY: { text: "非常多", color: "text-green-600 bg-green-50" },
+  SUFFICIENT: { text: "充足", color: "text-emerald-600 bg-emerald-50" },
+  LOW: { text: "即将售罄", color: "text-orange-600 bg-orange-50" },
+  PREORDER: { text: "可预订", color: "text-blue-600 bg-blue-50" },
+  SOLD_OUT: { text: "售罄", color: "text-gray-500 bg-gray-100" },
 };
 
 export default function HomePage() {
@@ -32,6 +32,7 @@ export default function HomePage() {
   const [error, setError] = useState("");
   const [detail, setDetail] = useState<Product | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [buying, setBuying] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<{
     orderNo: string;
     productName: string;
@@ -50,7 +51,7 @@ export default function HomePage() {
       setProducts(data.products || []);
       if (data.error) setError(data.error);
     } catch {
-      setError("\u52a0\u8f7d\u5546\u54c1\u5931\u8d25");
+      setError("加载商品失败");
       setProducts([]);
     } finally {
       setLoading(false);
@@ -73,6 +74,8 @@ export default function HomePage() {
   };
 
   const handleBuy = async (p: Product) => {
+    if (buying) return;
+    setBuying(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -86,7 +89,7 @@ export default function HomePage() {
         return;
       }
       if (!res.ok) {
-        alert(data.error || "\u4e0b\u5355\u5931\u8d25");
+        alert(data.error || "下单失败");
         return;
       }
       setDetailOpen(false);
@@ -96,7 +99,9 @@ export default function HomePage() {
         amount: data.order.amount,
       });
     } catch {
-      alert("\u7f51\u7edc\u9519\u8bef\uff0c\u8bf7\u91cd\u8bd5");
+      alert("网络错误，请重试");
+    } finally {
+      setBuying(false);
     }
   };
 
@@ -105,33 +110,33 @@ export default function HomePage() {
       <Sidebar activeId={categoryId} onSelect={setCategoryId} />
 
       <div className="flex-1 p-4 sm:p-6">
-        <div className="mb-6 flex gap-2">
+        <div className="mb-4 flex gap-2 sm:mb-6">
           <input
-            type="text"
-            placeholder="\u641c\u7d22\u5546\u54c1\u5173\u952e\u8bcd"
+            type="search"
+            placeholder="搜索商品关键词"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && setQuery(search.trim())}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:px-4"
           />
           <button
             onClick={() => setQuery(search.trim())}
-            className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 sm:px-5"
           >
-            \u641c\u7d22
+            搜索
           </button>
         </div>
 
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="grid grid-cols-12 gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-500">
-            <div className="col-span-6 sm:col-span-7">\u5546\u54c1</div>
-            <div className="col-span-2 text-right">\u4ef7\u683c</div>
-            <div className="col-span-2 hidden text-center sm:block">\u5e93\u5b58</div>
-            <div className="col-span-2 text-center sm:col-span-1">\u64cd\u4f5c</div>
+          <div className="hidden grid-cols-12 gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-500 sm:grid">
+            <div className="col-span-7">商品</div>
+            <div className="col-span-2 text-right">价格</div>
+            <div className="col-span-2 text-center">库存</div>
+            <div className="col-span-1 text-center">操作</div>
           </div>
 
           {loading && (
-            <div className="px-4 py-12 text-center text-sm text-gray-400">\u52a0\u8f7d\u4e2d...</div>
+            <div className="px-4 py-12 text-center text-sm text-gray-400">加载中...</div>
           )}
 
           {!loading && error && (
@@ -139,7 +144,7 @@ export default function HomePage() {
           )}
 
           {!loading && !error && products.length === 0 && (
-            <div className="px-4 py-12 text-center text-sm text-gray-400">\u6682\u65e0\u5339\u914d\u5546\u54c1</div>
+            <div className="px-4 py-12 text-center text-sm text-gray-400">暂无匹配商品</div>
           )}
 
           {!loading &&
@@ -155,10 +160,10 @@ export default function HomePage() {
               return (
                 <div
                   key={p.id}
-                  className="grid grid-cols-12 items-center gap-2 border-b border-gray-50 px-4 py-3 last:border-0 hover:bg-gray-50/50"
+                  className="flex flex-col gap-2 border-b border-gray-50 px-4 py-3 last:border-0 hover:bg-gray-50/50 sm:grid sm:grid-cols-12 sm:items-center sm:gap-2"
                 >
                   <div
-                    className="col-span-6 cursor-pointer sm:col-span-7"
+                    className="cursor-pointer sm:col-span-7"
                     onClick={() => openDetail(p)}
                   >
                     <p className="text-sm font-medium text-gray-900 line-clamp-2 hover:text-indigo-600">
@@ -175,22 +180,24 @@ export default function HomePage() {
                       ))}
                     </div>
                   </div>
-                  <div className="col-span-2 text-right text-sm font-semibold text-gray-900">
-                    \u00a5{Number(p.price).toFixed(2)}
-                  </div>
-                  <div className="col-span-2 hidden text-center sm:block">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${stock.color}`}>
-                      {stock.text}
-                    </span>
-                  </div>
-                  <div className="col-span-2 text-center sm:col-span-1">
-                    <button
-                      onClick={() => openDetail(p)}
-                      className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                      disabled={p.stockStatus === "SOLD_OUT"}
-                    >
-                      {p.stockStatus === "PREORDER" ? "\u9884\u8ba2" : "\u8d2d\u4e70"}
-                    </button>
+                  <div className="flex items-center justify-between gap-3 sm:col-span-5 sm:contents">
+                    <div className="text-sm font-semibold text-gray-900 sm:col-span-2 sm:text-right">
+                      ¥{Number(p.price).toFixed(2)}
+                    </div>
+                    <div className="sm:col-span-2 sm:text-center">
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${stock.color}`}>
+                        {stock.text}
+                      </span>
+                    </div>
+                    <div className="sm:col-span-1 sm:text-center">
+                      <button
+                        onClick={() => openDetail(p)}
+                        className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                        disabled={p.stockStatus === "SOLD_OUT"}
+                      >
+                        {p.stockStatus === "PREORDER" ? "预订" : "购买"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -212,28 +219,28 @@ export default function HomePage() {
             onClick={() => setOrderSuccess(null)}
           />
           <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
-            <div className="text-3xl">\u2705</div>
-            <h3 className="mt-2 text-lg font-semibold text-gray-900">\u4e0b\u5355\u6210\u529f</h3>
+            <div className="text-3xl">✅</div>
+            <h3 className="mt-2 text-lg font-semibold text-gray-900">下单成功</h3>
             <p className="mt-1 text-sm text-gray-600">{orderSuccess.productName}</p>
             <p className="mt-2 text-xl font-bold text-indigo-600">
-              \u00a5{Number(orderSuccess.amount).toFixed(2)}
+              ¥{Number(orderSuccess.amount).toFixed(2)}
             </p>
-            <p className="mt-2 text-xs text-gray-400">
-              \u8ba2\u5355\u53f7\uff1a{orderSuccess.orderNo}
+            <p className="mt-2 break-all text-xs text-gray-400">
+              订单号：{orderSuccess.orderNo}
             </p>
-            <p className="mt-1 text-xs text-green-600">\u6a21\u62df\u652f\u4ed8\u5df2\u5b8c\u6210</p>
+            <p className="mt-1 text-xs text-green-600">模拟支付已完成</p>
             <div className="mt-4 flex gap-2">
               <button
                 onClick={() => setOrderSuccess(null)}
                 className="flex-1 rounded-lg border border-gray-300 py-2 text-sm"
               >
-                \u7ee7\u7eed\u8d2d\u7269
+                继续购物
               </button>
               <a
-                href="/orders"
+                href={"/orders?orderNo=" + encodeURIComponent(orderSuccess.orderNo)}
                 className="flex-1 rounded-lg bg-indigo-600 py-2 text-center text-sm text-white"
               >
-                \u67e5\u770b\u8ba2\u5355
+                查看订单
               </a>
             </div>
           </div>

@@ -15,16 +15,21 @@ interface SidebarProps {
 }
 
 const ICONS: Record<string, string> = {
-  GPT: "\ud83e\udd16",
-  Claude: "\u2728",
-  "\u63a8\u7279": "\ud835\udd4f",
-  default: "\ud83d\udce6",
+  GPT: "🤖",
+  Claude: "✨",
+  推特: "𝕏",
+  其它: "📦",
+  default: "📦",
 };
 
 export default function Sidebar({ activeId = "all", onSelect }: SidebarProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [active, setActive] = useState(activeId);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setActive(activeId);
+  }, [activeId]);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -41,53 +46,53 @@ export default function Sidebar({ activeId = "all", onSelect }: SidebarProps) {
     onSelect?.(id);
   };
 
+  const itemClass = (id: string) =>
+    `flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors md:w-full ${
+      active === id
+        ? "bg-indigo-50 font-medium text-indigo-700"
+        : "text-gray-700 hover:bg-gray-50"
+    }`;
+
   return (
-    <aside className="w-full shrink-0 border-r border-gray-200 bg-white md:w-56">
-      <div className="p-4">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-          \u5546\u54c1\u5206\u7c7b
+    <aside className="w-full shrink-0 border-b border-gray-200 bg-white md:w-56 md:border-b-0 md:border-r">
+      <div className="p-3 md:p-4">
+        <h2 className="mb-2 hidden text-xs font-semibold uppercase tracking-wider text-gray-400 md:mb-3 md:block">
+          商品分类
         </h2>
-        <ul className="space-y-1">
-          <li>
+        {/* Mobile: horizontal scroll chips; Desktop: vertical list */}
+        <ul className="flex gap-1 overflow-x-auto pb-1 md:flex-col md:space-y-1 md:overflow-visible md:pb-0">
+          <li className="shrink-0 md:w-full">
             <button
+              type="button"
               onClick={() => handleClick("all")}
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                active === "all"
-                  ? "bg-indigo-50 font-medium text-indigo-700"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
+              className={itemClass("all")}
             >
-              <span className="text-base">\ud83d\udce6</span>
-              \u5168\u90e8\u5546\u54c1
+              <span className="text-base">📦</span>
+              全部
             </button>
           </li>
 
           {loading && (
-            <li className="px-3 py-2 text-xs text-gray-400">\u52a0\u8f7d\u4e2d...</li>
+            <li className="px-3 py-2 text-xs text-gray-400">加载中...</li>
           )}
 
           {!loading && categories.length === 0 && (
-            <li className="px-3 py-2 text-xs text-gray-400">
-              \u6682\u65e0\u5206\u7c7b\uff08\u8bf7\u5148 seed \u6570\u636e\u5e93\uff09
-            </li>
+            <li className="px-3 py-2 text-xs text-gray-400">暂无分类</li>
           )}
 
           {categories.map((cat) => (
-            <li key={cat.id}>
+            <li key={cat.id} className="shrink-0 md:w-full">
               <button
+                type="button"
                 onClick={() => handleClick(cat.id)}
-                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  active === cat.id
-                    ? "bg-indigo-50 font-medium text-indigo-700"
-                    : "text-gray-700 hover:bg-gray-50"
-                }`}
+                className={itemClass(cat.id)}
               >
                 <span className="text-base">
                   {ICONS[cat.name] || ICONS.default}
                 </span>
-                <span className="flex-1 truncate">{cat.name}</span>
+                <span className="truncate">{cat.name}</span>
                 {typeof cat.productCount === "number" && (
-                  <span className="text-xs text-gray-400">
+                  <span className="hidden text-xs text-gray-400 md:inline">
                     {cat.productCount}
                   </span>
                 )}
