@@ -11,11 +11,12 @@ interface User {
 }
 
 const NAV = [
-  { href: "/admin", label: "\u6982\u89c8", exact: true },
-  { href: "/admin/categories", label: "\u5206\u7c7b\u7ba1\u7406" },
-  { href: "/admin/products", label: "\u5546\u54c1\u7ba1\u7406" },
-  { href: "/admin/orders", label: "\u8ba2\u5355\u7ba1\u7406" },
-  { href: "/admin/config", label: "\u7ad9\u70b9\u914d\u7f6e" },
+  { href: "/admin", label: "概览", exact: true },
+  { href: "/admin/categories", label: "分类管理" },
+  { href: "/admin/products", label: "商品管理" },
+  { href: "/admin/orders", label: "订单管理" },
+  { href: "/admin/config", label: "站点配置" },
+  { href: "/account", label: "修改密码" },
 ];
 
 export default function AdminLayout({
@@ -53,7 +54,7 @@ export default function AdminLayout({
   if (checking) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center text-sm text-gray-400">
-        \u9a8c\u8bc1\u6743\u9650\u4e2d...
+        验证权限中...
       </div>
     );
   }
@@ -61,15 +62,15 @@ export default function AdminLayout({
   if (denied) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <p className="text-lg font-medium text-gray-900">\u65e0\u8bbf\u95ee\u6743\u9650</p>
+        <p className="text-lg font-medium text-gray-900">无访问权限</p>
         <p className="mt-2 text-sm text-gray-500">
-          \u5f53\u524d\u8d26\u53f7\u4e0d\u662f\u7ba1\u7406\u5458\uff0c\u65e0\u6cd5\u8fdb\u5165\u540e\u53f0\u3002
+          当前账号不是管理员，无法进入后台。
         </p>
         <Link
           href="/"
           className="mt-4 inline-block text-sm text-indigo-600 hover:underline"
         >
-          \u8fd4\u56de\u5546\u57ce
+          返回商城
         </Link>
       </div>
     );
@@ -80,7 +81,7 @@ export default function AdminLayout({
       <aside className="w-full shrink-0 border-b border-gray-200 bg-white md:w-52 md:border-b-0 md:border-r">
         <div className="p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            \u7ba1\u7406\u540e\u53f0
+            管理后台
           </p>
           <p className="mt-1 truncate text-sm text-gray-600">{user?.username}</p>
           <nav className="mt-4 space-y-1">
@@ -107,7 +108,7 @@ export default function AdminLayout({
             href="/"
             className="mt-6 block rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-50"
           >
-            \u2190 \u8fd4\u56de\u5546\u57ce
+            ← 返回商城
           </Link>
         </div>
       </aside>

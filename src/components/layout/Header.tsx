@@ -104,9 +104,13 @@ export default function Header() {
             <span className="text-xs text-gray-400">...</span>
           ) : user ? (
             <>
-              <span className="hidden max-w-[8rem] truncate text-sm text-gray-600 sm:inline">
+              <Link
+                href="/account"
+                className="hidden max-w-[8rem] truncate text-sm text-gray-600 hover:text-indigo-600 sm:inline"
+                title="账号设置"
+              >
                 {user.username}
-              </span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="rounded-md px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 sm:px-3"
@@ -157,6 +161,7 @@ export default function Header() {
             {navLink("/", "购物", "block")}
             {navLink("/orders", "订单查询", "block")}
             {navLink("/help", "帮助中心", "block")}
+            {user && navLink("/account", "账号设置", "block")}
             {!user && navLink("/register", "创建账号", "block")}
             {user?.role === "ADMIN" && (
               <Link

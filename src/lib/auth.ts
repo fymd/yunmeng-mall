@@ -83,9 +83,9 @@ export async function registerUser(
       OR: [{ username }, ...(email ? [{ email }] : [])],
     },
   });
-  if (existing) throw new Error("\u7528\u6237\u540d\u6216\u90ae\u7bb1\u5df2\u5b58\u5728");
-  if (username.length < 3) throw new Error("\u7528\u6237\u540d\u81f3\u5c11 3 \u4e2a\u5b57\u7b26");
-  if (password.length < 6) throw new Error("\u5bc6\u7801\u81f3\u5c11 6 \u4e2a\u5b57\u7b26");
+  if (existing) throw new Error("用户名或邮箱已存在");
+  if (username.length < 3) throw new Error("用户名至少 3 个字符");
+  if (password.length < 6) throw new Error("密码至少 6 个字符");
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
@@ -110,13 +110,45 @@ export async function loginUser(username: string, password: string) {
       OR: [{ username }, { email: username }],
     },
   });
-  if (!user) throw new Error("\u7528\u6237\u540d\u6216\u5bc6\u7801\u9519\u8bef");
+  if (!user) throw new Error("用户名或密码错误");
   const ok = await verifyPassword(password, user.passwordHash);
-  if (!ok) throw new Error("\u7528\u6237\u540d\u6216\u5bc6\u7801\u9519\u8bef");
+  if (!ok) throw new Error("用户名或密码错误");
   return {
     id: user.id,
     username: user.username,
     email: user.email,
     role: user.role,
   } as SessionUser;
+}
+
+/**
+ * Change password for the given user id. Requires current password.
+ */
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  if (!currentPassword) throw new Error("请输入当前密码");
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error("新密码至少 6 个字符");
+  }
+  if (newPassword.length > 128) {
+    throw new Error("新密码过长");
+  }
+  if (currentPassword === newPassword) {
+    throw new Error("新密码不能与当前密码相同");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error("用户不存在");
+
+  const ok = await verifyPassword(currentPassword, user.passwordHash);
+  if (!ok) throw new Error("当前密码错误");
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash },
+  });
 }
