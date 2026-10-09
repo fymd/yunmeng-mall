@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import ProductDetailModal from "@/components/product/ProductDetailModal";
 
@@ -24,6 +25,7 @@ const STOCK_LABEL: Record<string, { text: string; color: string }> = {
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState("all");
@@ -33,15 +35,6 @@ export default function HomePage() {
   const [detail, setDetail] = useState<Product | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [buying, setBuying] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState<{
-    orderNo: string;
-    productName: string;
-    amount: number;
-    remark?: string;
-    status?: string;
-    payUrl?: string;
-    paymentMessage?: string;
-  } | null>(null);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -97,20 +90,24 @@ export default function HomePage() {
         return;
       }
       setDetailOpen(false);
-      const pay = data.order?.payment;
-      setOrderSuccess({
-        orderNo: data.order.orderNo,
-        productName: data.order.productName,
-        amount: data.order.amount,
-        remark: data.order.remark || remark || undefined,
-        status: data.order.status,
-        payUrl: pay?.payUrl,
-        paymentMessage: pay?.message,
-      });
-      if (pay?.payUrl && typeof window !== "undefined") {
-        // Optional: open payment page for real/skeleton gateways
-        // window.open(pay.payUrl, "_blank");
+      const orderNo = data.order.orderNo as string;
+      const payUrl = data.order?.payment?.payUrl as string | undefined;
+
+      // Real gateway: go pay first, result page after return / notify
+      if (payUrl) {
+        const returnTo =
+          "/pay/result?orderNo=" +
+          encodeURIComponent(orderNo) +
+          "&payUrl=" +
+          encodeURIComponent(payUrl);
+        // Store return path hint; open pay URL
+        sessionStorage.setItem("ym_pay_return", returnTo);
+        window.location.href = payUrl;
+        return;
       }
+
+      // Mock / immediate PAID → result page
+      router.push("/pay/result?orderNo=" + encodeURIComponent(orderNo));
     } catch {
       alert("网络错误，请重试");
     } finally {
@@ -225,66 +222,6 @@ export default function HomePage() {
         onBuy={handleBuy}
         buying={buying}
       />
-
-      {orderSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setOrderSuccess(null)}
-          />
-          <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
-            <div className="text-3xl">
-              {orderSuccess.status === "PAID" ? "✅" : "⏳"}
-            </div>
-            <h3 className="mt-2 text-lg font-semibold text-gray-900">
-              {orderSuccess.status === "PAID" ? "下单成功" : "订单已创建"}
-            </h3>
-            <p className="mt-1 text-sm text-gray-600">{orderSuccess.productName}</p>
-            <p className="mt-2 text-xl font-bold text-indigo-600">
-              ¥{Number(orderSuccess.amount).toFixed(2)}
-            </p>
-            <p className="mt-2 break-all text-xs text-gray-400">
-              订单号：{orderSuccess.orderNo}
-            </p>
-            {orderSuccess.remark && (
-              <p className="mt-2 rounded-lg bg-gray-50 px-2 py-1.5 text-left text-xs text-gray-600">
-                备注：{orderSuccess.remark}
-              </p>
-            )}
-            {orderSuccess.status === "PAID" ? (
-              <p className="mt-1 text-xs text-green-600">模拟支付已完成</p>
-            ) : (
-              <p className="mt-1 text-xs text-amber-600">
-                {orderSuccess.paymentMessage || "请完成支付（订单待支付）"}
-              </p>
-            )}
-            <div className="mt-4 flex flex-col gap-2">
-              {orderSuccess.payUrl && (
-                <a
-                  href={orderSuccess.payUrl}
-                  className="rounded-lg bg-emerald-600 py-2 text-center text-sm text-white hover:bg-emerald-700"
-                >
-                  前往支付
-                </a>
-              )}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setOrderSuccess(null)}
-                  className="flex-1 rounded-lg border border-gray-300 py-2 text-sm"
-                >
-                  继续购物
-                </button>
-                <a
-                  href={"/orders?orderNo=" + encodeURIComponent(orderSuccess.orderNo)}
-                  className="flex-1 rounded-lg bg-indigo-600 py-2 text-center text-sm text-white"
-                >
-                  查看订单
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

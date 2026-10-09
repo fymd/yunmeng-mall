@@ -2,18 +2,17 @@
 
 ## Current Status
 
-**T27 Real payment providers**: ✅ DONE  
-**Last Update**: 2026-10-10 04:55 JST
+**T28 Payment result page**: ✅ DONE  
+**Last Update**: 2026-10-10 05:00 JST
 
 ## Post-MVP
-- [x] T23–T26
-- [x] **T27 真实支付宝 / 微信对接**
+- [x] T23–T27
+- [x] **T28 支付完成页** `/pay/result?orderNo=`
 
-### T27 Features
-- Alipay: `alipay.trade.page.pay` + RSA2 sign/verify notify
-- WeChat: Native unifiedorder V2 + MD5 sign/verify + QR page
-- Requires public HTTPS notify URLs
-- Tests: `tests/payment-crypto.test.ts`
-- Docs: `docs/payment.md`
+### T28 Features
+- Result page: status icon, amount, orderNo copy, remark, actions
+- Auto-poll while PENDING (up to ~2 min)
+- Checkout redirects to result (mock) or payUrl then return_url (Alipay)
+- WeChat QR redirects to result when paid
 
 Repo: https://github.com/fymd/yunmeng-mall

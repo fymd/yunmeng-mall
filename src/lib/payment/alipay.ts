@@ -14,13 +14,11 @@ const GATEWAY_PROD = "https://openapi.alipay.com/gateway.do";
 const GATEWAY_SANDBOX = "https://openapi-sandbox.dl.alipaydev.com/gateway.do";
 
 function isSandboxAppId(appId: string): boolean {
-  // Common heuristic; override via notify URL host if needed
   return appId.startsWith("9021") || process.env.ALIPAY_SANDBOX === "1";
 }
 
 /**
  * Alipay computer website pay (alipay.trade.page.pay).
- * Requires AppId + merchant private key + Alipay public key + public notify URL.
  */
 export class AlipayPaymentProvider implements PaymentProvider {
   name = "alipay" as const;
@@ -39,9 +37,6 @@ export class AlipayPaymentProvider implements PaymentProvider {
     return isSandboxAppId(this.creds.appId) ? GATEWAY_SANDBOX : GATEWAY_PROD;
   }
 
-  /**
-   * Build signed query for page pay. User opens payUrl in browser to pay.
-   */
   async createPayment(input: CreatePaymentInput): Promise<PaymentResult> {
     if (!this.isConfigured()) {
       return {
@@ -62,6 +57,15 @@ export class AlipayPaymentProvider implements PaymentProvider {
       };
     }
 
+    // Sync return after user pays in browser → payment result page
+    const siteBase =
+      process.env.NEXTAUTH_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      "";
+    const returnUrl = siteBase
+      ? `${siteBase.replace(/\/$/, "")}/pay/result?orderNo=${encodeURIComponent(input.orderNo)}`
+      : "";
+
     const bizContent = JSON.stringify({
       out_trade_no: input.orderNo,
       product_code: "FAST_INSTANT_TRADE_PAY",
@@ -80,6 +84,9 @@ export class AlipayPaymentProvider implements PaymentProvider {
       notify_url: notifyUrl,
       biz_content: bizContent,
     };
+    if (returnUrl) {
+      params.return_url = returnUrl;
+    }
 
     try {
       params.sign = alipaySignRsa2(params, this.creds.privateKey);

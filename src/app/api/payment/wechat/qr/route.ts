@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Simple QR landing page for WeChat Native code_url.
- * Uses a public QR image API for display only (code_url is weixin:// or https URL from WeChat).
+ * WeChat Native QR page — after pay, link to /pay/result
  */
 export async function GET(req: NextRequest) {
   const orderNo = req.nextUrl.searchParams.get("orderNo") || "";
@@ -13,6 +12,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse("missing codeUrl", { status: 400 });
   }
 
+  const resultPath = `/pay/result?orderNo=${encodeURIComponent(orderNo)}`;
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(codeUrl)}`;
 
   const html = `<!DOCTYPE html>
@@ -36,10 +36,9 @@ export async function GET(req: NextRequest) {
     <p class="amt">¥${escapeHtml(amount)}</p>
     <img src="${escapeHtml(qrSrc)}" width="220" height="220" alt="支付二维码"/>
     <p style="color:#6b7280;font-size:.75rem;margin-top:1rem">请使用微信扫一扫完成支付</p>
-    <p style="margin-top:1rem"><a href="/orders?orderNo=${encodeURIComponent(orderNo)}">支付后查看订单</a></p>
+    <p style="margin-top:1rem"><a href="${escapeHtml(resultPath)}">支付完成后查看结果</a></p>
   </div>
   <script>
-    // Poll order status every 3s
     (function poll(){
       var no = ${JSON.stringify(orderNo)};
       if (!no) return;
@@ -48,7 +47,7 @@ export async function GET(req: NextRequest) {
           .then(function(r){ return r.json(); })
           .then(function(d){
             if (d.order && d.order.status && d.order.status !== "PENDING") {
-              location.href = "/orders?orderNo=" + encodeURIComponent(no);
+              location.href = "/pay/result?orderNo=" + encodeURIComponent(no);
             }
           }).catch(function(){});
       }, 3000);
