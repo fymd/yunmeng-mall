@@ -2,20 +2,24 @@
 
 ## Current Status
 
-**T10 Create order + Mock payment**: ✅ DONE  
-**Last Update**: 2026-10-09 18:50 CST
+**T11 Order query**: ✅ DONE  
+**Last Update**: 2026-10-09 20:40 CST
 
 ## Milestone 3 — Auth & Order
 - [x] T9 Register / Login
-- [x] **T10 Create order + Mock payment**
-- [ ] T11 Order query (partially done in T10 /orders page)
-- [ ] T12 Order status pages polish
+- [x] T10 Create order + Mock payment
+- [x] **T11 Order query page**
+- [ ] T12 Order status polish (optional, mostly covered)
 
-### T10 Flow
-1. Login required
-2. Click buy on product → POST /api/orders
-3. Mock payment auto-succeeds → status PAID
-4. Success modal with orderNo
-5. /orders page: query by orderNo + my orders list
+### T11 Features
+- Query by order number (no login required)
+- My orders list (login required)
+- Deep link: `/orders?orderNo=YMxxx`
+- Copy order number
+- Refresh list
+- Status badges + paid time + remark
+- Status help text
+
+## Next: T12 (optional) or Milestone 4 Admin (T13)
 
 Repo: https://github.com/fymd/yunmeng-mall
