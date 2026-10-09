@@ -28,6 +28,12 @@ type FormState = {
   wechat_mch_id: string;
   wechat_api_key: string;
   wechat_notify_url: string;
+  smtp_host: string;
+  smtp_port: string;
+  smtp_user: string;
+  smtp_pass: string;
+  smtp_from: string;
+  notify_email: string;
 };
 
 const emptyForm: FormState = {
@@ -50,12 +56,19 @@ const emptyForm: FormState = {
   wechat_mch_id: "",
   wechat_api_key: "",
   wechat_notify_url: "",
+  smtp_host: "",
+  smtp_port: "587",
+  smtp_user: "",
+  smtp_pass: "",
+  smtp_from: "",
+  notify_email: "",
 };
 
 const SENSITIVE = new Set([
   "alipay_private_key",
   "alipay_public_key",
   "wechat_api_key",
+  "smtp_pass",
 ]);
 
 function maskIfSet(key: string, value: string): string {
@@ -157,7 +170,7 @@ export default function AdminConfigPage() {
         <div>
           <h1 className="text-xl font-semibold text-gray-900">站点配置</h1>
           <p className="mt-1 text-sm text-gray-500">
-            网站基础信息、公告、下单规则与支付模式
+            网站基础、公告、下单规则、支付与邮件通知
           </p>
         </div>
         <button
@@ -319,7 +332,87 @@ export default function AdminConfigPage() {
                 className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
               />
               <p className="mt-1 text-xs text-gray-400">
-                仅对状态为「待支付」的订单生效；填 0 表示不自动取消。模拟支付通常会立即变为已支付。
+                仅对「待支付」订单生效；填 0 表示不自动取消。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+          <h2 className="text-sm font-semibold text-gray-900">邮件通知（SMTP）</h2>
+          <p className="mt-0.5 text-xs text-gray-500">
+            配置后，卡密自动发货等事件会尝试发信。不填 Host 则不发送。密码已保存时显示
+            ********，仅在修改时重新输入。
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs text-gray-600">SMTP Host</label>
+              <input
+                value={form.smtp_host}
+                onChange={(e) => setField("smtp_host", e.target.value)}
+                placeholder="smtp.example.com"
+                className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-600">端口</label>
+              <input
+                value={form.smtp_port}
+                onChange={(e) => setField("smtp_port", e.target.value)}
+                placeholder="587"
+                className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
+              />
+              <p className="mt-1 text-xs text-gray-400">常用 587（STARTTLS）或 465（SSL）</p>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-600">用户名</label>
+              <input
+                value={form.smtp_user}
+                onChange={(e) => setField("smtp_user", e.target.value)}
+                autoComplete="off"
+                className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-600">
+                密码（已保存显示 ********）
+              </label>
+              <input
+                type="password"
+                value={form.smtp_pass}
+                onChange={(e) => setField("smtp_pass", e.target.value)}
+                onFocus={() => {
+                  if (form.smtp_pass === "********") {
+                    setField("smtp_pass", "");
+                  }
+                }}
+                autoComplete="new-password"
+                placeholder="留空或 ******** 表示不修改"
+                className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-600">发件人 From</label>
+              <input
+                value={form.smtp_from}
+                onChange={(e) => setField("smtp_from", e.target.value)}
+                placeholder="noreply@your-domain.com"
+                className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-600">
+                管理员通知邮箱
+              </label>
+              <input
+                type="email"
+                value={form.notify_email}
+                onChange={(e) => setField("notify_email", e.target.value)}
+                placeholder="admin@example.com"
+                className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                订单发货等事件抄送到此邮箱；用户邮箱在有注册邮箱时另行通知
               </p>
             </div>
           </div>
@@ -462,7 +555,7 @@ export default function AdminConfigPage() {
           </div>
         </section>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 pb-8">
           <button
             type="submit"
             disabled={saving}
