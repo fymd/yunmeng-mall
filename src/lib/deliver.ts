@@ -1,18 +1,15 @@
 import { prisma } from "@/lib/prisma";
+import { notifyOrderEvent } from "@/lib/mail";
 
 export type DeliverResult =
   | { ok: true; delivered: true; code: string; status: "DELIVERED" }
   | { ok: true; delivered: false; reason: string; status: string }
   | { ok: false; reason: string };
 
-/**
- * If product.autoDeliver, consume one UNUSED card and mark order DELIVERED.
- * Idempotent: already has deliveryContent / DELIVERED → no-op.
- */
 export async function tryAutoDeliver(orderId: string): Promise<DeliverResult> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { product: true, card: true },
+    include: { product: true, user: true, card: true },
   });
   if (!order) return { ok: false, reason: "order not found" };
 
@@ -28,7 +25,6 @@ export async function tryAutoDeliver(orderId: string): Promise<DeliverResult> {
     } as DeliverResult;
   }
 
-  // Only after payment (or admin forced)
   if (order.status !== "PAID" && order.status !== "PENDING") {
     return { ok: true, delivered: false, reason: "status not eligible", status: order.status };
   }
@@ -37,7 +33,6 @@ export async function tryAutoDeliver(orderId: string): Promise<DeliverResult> {
     return { ok: true, delivered: false, reason: "autoDeliver off", status: order.status };
   }
 
-  // Transaction: pick one unused card
   try {
     const result = await prisma.$transaction(async (tx) => {
       const card = await tx.cardCode.findFirst({
@@ -48,11 +43,7 @@ export async function tryAutoDeliver(orderId: string): Promise<DeliverResult> {
 
       await tx.cardCode.update({
         where: { id: card.id },
-        data: {
-          status: "SOLD",
-          orderId: order.id,
-          soldAt: new Date(),
-        },
+        data: { status: "SOLD", orderId: order.id, soldAt: new Date() },
       });
 
       const note = "[系统] 自动发货成功";
@@ -60,7 +51,7 @@ export async function tryAutoDeliver(orderId: string): Promise<DeliverResult> {
         ? order.remark
         : [order.remark, note].filter(Boolean).join("\n").slice(0, 500);
 
-      const updated = await tx.order.update({
+      await tx.order.update({
         where: { id: order.id },
         data: {
           status: "DELIVERED",
@@ -70,7 +61,6 @@ export async function tryAutoDeliver(orderId: string): Promise<DeliverResult> {
         },
       });
 
-      // Optional: refresh product stock badge by remaining cards
       const left = await tx.cardCode.count({
         where: { productId: order.productId, status: "UNUSED" },
       });
@@ -86,7 +76,7 @@ export async function tryAutoDeliver(orderId: string): Promise<DeliverResult> {
         });
       }
 
-      return { code: card.code, status: updated.status };
+      return { code: card.code };
     });
 
     if (!result) {
@@ -102,20 +92,18 @@ export async function tryAutoDeliver(orderId: string): Promise<DeliverResult> {
           remark,
         },
       });
-      return {
-        ok: true,
-        delivered: false,
-        reason: "no unused cards",
-        status: "PAID",
-      };
+      return { ok: true, delivered: false, reason: "no unused cards", status: "PAID" };
     }
 
-    return {
-      ok: true,
-      delivered: true,
-      code: result.code,
+    void notifyOrderEvent({
+      orderNo: order.orderNo,
       status: "DELIVERED",
-    };
+      productName: order.product.name,
+      deliveryContent: result.code,
+      userEmail: order.user?.email,
+    });
+
+    return { ok: true, delivered: true, code: result.code, status: "DELIVERED" };
   } catch (e) {
     console.error("tryAutoDeliver", e);
     return { ok: false, reason: String(e) };
