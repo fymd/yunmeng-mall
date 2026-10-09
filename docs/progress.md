@@ -2,31 +2,30 @@
 
 ## Current Status
 
-**T18 Announcement from config**: ✅ DONE  
-**Last Update**: 2026-10-10 03:55 JST
-
-## Milestone 4 — Admin
-- [x] T13–T17 complete
+**T19 Core tests + error handling**: ✅ DONE  
+**Last Update**: 2026-10-10 04:00 JST
 
 ## Milestone 5 — Polish, Scripts & Ship
-- [x] **T18 Announcement from config**
-- [ ] T19 Core tests + error handling
+- [x] T18 Announcement from config
+- [x] **T19 Core tests + error handling**
 - [ ] T20 One-click scripts (backup / restore / deploy)
 - [ ] T21 README + CI
 - [ ] T22 Final review
 
-### T18 Features
-- `Announcement` component: top banner + optional popup from public config
-- Popup uses sessionStorage keyed by title+content hash (re-shows when admin updates text)
-- `CustomerServiceFloat`: bottom-right FAB reads QQ / WeChat / link from config
-- Footer uses `site_name` from config
-- Wired in root `layout.tsx`
+### T19 Features
+- Vitest unit tests: orderNo, order status, Mock payment, config key sensitivity, validators
+- `src/lib/api-error.ts` — consistent JSON error helpers
+- `src/lib/order.ts` — ORDER_STATUSES, isValidOrderStatus, isOrderNoFormat
+- `src/lib/validators.ts` — price/page/username helpers
+- `src/app/error.tsx` + `not-found.tsx` — user-facing error pages
+- `npm test` / `npm run test:watch`
 
-### How to verify
-1. Admin → 站点配置 → 改公告标题/内容，开启「弹窗显示」
-2. 前台刷新：顶部黄条 + 弹窗
-3. 关闭弹窗后同会话不再弹出；改公告内容后会再次弹出
+### Run tests
+```bash
+npm install
+npm test
+```
 
-## Next: T19 Core tests + error handling
+## Next: T20 One-click scripts (review/enhance backup.sh restore.sh deploy.sh)
 
 Repo: https://github.com/fymd/yunmeng-mall
